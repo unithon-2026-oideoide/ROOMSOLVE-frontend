@@ -1,9 +1,8 @@
 import '../models/technician_job.dart';
 import 'repair_service.dart';
-import 'report_service.dart';
 
 /// GET /api/repair/schedule?technicianId=로 배정된 일정을 가져오고, 각 일정의
-/// report_id로 상세 정보(및 repair_status_timeline의 현재 상태)를 조합한다.
+/// repair_status_timeline 현재 상태를 조합한다.
 ///
 /// 배정된 일정이 없으면 빈 리스트를 반환한다 — 예전에는 이 경우
 /// mockTechnicianJobs로 대체해서, 신규 계정이든 조회 실패든 항상 그럴싸한
@@ -15,6 +14,11 @@ import 'report_service.dart';
 /// GET /api/repair/schedule 자체가 실패하면(네트워크/서버 오류) 그 예외를
 /// 그대로 던진다 — "배정 없음"과 "조회 실패"를 화면에서 다르게 보여줘야
 /// 하기 때문이다(뭉뚱그려 빈 리스트로 처리하면 오류가 조용히 사라진다).
+///
+/// 신고 상세는 GET /api/repair/schedule 응답에 조인된 schedule['report']를
+/// 그대로 쓴다 — GET /api/reports/{id}는 tenant_id로 스코프돼 있어 기사가
+/// 부르면 항상 404이므로(예전에는 여기서 매 작업마다 그 호출을 했다가 매번
+/// 실패하고 이 폴백으로 되돌아왔다), 애초에 호출하지 않는다.
 Future<List<TechnicianJob>> loadTechnicianJobs(String? technicianId) async {
   if (technicianId == null || technicianId.isEmpty) return [];
 
@@ -34,40 +38,22 @@ Future<List<TechnicianJob>> loadTechnicianJobs(String? technicianId) async {
       // 작업 자체는 여전히 보여줘야 한다.
     }
 
-    Map<String, dynamic> reportMap = {};
-    try {
-      final report = await ReportService.instance.getReport(reportId);
-      reportMap = {
-        'id': report.id,
-        'category': report.category,
-        'description': report.description,
-        'severity': report.severity,
-        'status': report.status,
-        'photo_url': report.photoUrl,
-        'photo_urls': report.photoUrls,
-        'created_at': report.createdAt?.toIso8601String(),
-      };
-    } catch (_) {
-      // 리포트 상세 조회가 실패해도 일정(schedule)에 딸려온 정보가 있으면 그걸 쓴다.
-      if (schedule['report'] is Map) {
-        reportMap = Map<String, dynamic>.from(schedule['report'] as Map);
-      }
-    }
+    final reportMap = schedule['report'] is Map
+        ? Map<String, dynamic>.from(schedule['report'] as Map)
+        : <String, dynamic>{
+            'id': reportId,
+            'category': schedule['category'],
+            'description': schedule['description'],
+            'severity': schedule['severity'],
+            'status': schedule['status'],
+            'photo_url': schedule['photo_url'],
+            'photo_urls': schedule['photo_urls'],
+            'created_at': schedule['created_at'],
+          };
 
     return TechnicianJob.fromApi(
       schedule: schedule,
-      report: reportMap.isNotEmpty
-          ? reportMap
-          : {
-              'id': reportId,
-              'category': schedule['category'],
-              'description': schedule['description'],
-              'severity': schedule['severity'],
-              'status': schedule['status'],
-              'photo_url': schedule['photo_url'],
-              'photo_urls': schedule['photo_urls'],
-              'created_at': schedule['created_at'] ?? schedule['scheduled_at'],
-            },
+      report: reportMap,
       currentRepairStatus: currentRepairStatus,
     );
   }));

@@ -36,8 +36,40 @@ import 'screens/tenant/report_progress_screen.dart';
 import 'screens/tenant/report_result_screen.dart';
 import 'screens/tenant/report_visit_schedule_screen.dart';
 import 'screens/tenant/tenant_home_screen.dart';
+import 'services/report_service.dart';
+import 'services/technician_job_loader.dart';
+import 'widgets/extra_or_fetch.dart';
 
 String _homePathFor(UserRole role) => homePathForRole(role);
+
+/// `state.extra`가 넘겨받은 타입과 맞을 때만 값을 꺼내고, 아니면(웹 새로고침 등
+/// extra가 유실된 경우) null을 돌려준다. `as T`로 강제 캐스팅하면 여기서 바로
+/// 예외가 나서 화면 자체가 뜨지 못한다.
+T? _extraAs<T>(Object? extra) => extra is T ? extra : null;
+
+/// 배정 작업 목록(technicianId 기준)에서 id가 일치하는 하나를 찾는다.
+/// JobDetailScreen/RepairCompleteScreen이 extra 없이 새로고침됐을 때 쓴다.
+Future<TechnicianJob?> _findTechnicianJob(AuthProvider authProvider, String id) async {
+  final technicianId = authProvider.currentUser?.id;
+  if (technicianId == null || technicianId.isEmpty) return null;
+  final jobs = await loadTechnicianJobs(technicianId);
+  for (final job in jobs) {
+    if (job.id == id) return job;
+  }
+  return null;
+}
+
+/// 새 일감 목록(technicianId 기준)에서 id가 일치하는 하나를 찾는다.
+/// GET /api/vendors/requests에 단건 조회 API가 없어 목록에서 찾는 방식이다.
+Future<VendorRequest?> _findVendorRequest(AuthProvider authProvider, String id) async {
+  final technicianId = authProvider.currentUser?.id;
+  if (technicianId == null || technicianId.isEmpty) return null;
+  final requests = await ReportService.instance.getVendorRequests(technicianId: technicianId);
+  for (final request in requests) {
+    if (request.id == id) return request;
+  }
+  return null;
+}
 
 GoRouter buildRouter(AuthProvider authProvider) {
   return GoRouter(
@@ -69,29 +101,70 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(path: '/tenant/reports/new', builder: (context, state) => const ReportCreateScreen()),
       GoRoute(
         path: '/tenant/reports/new/details',
+        // 2단계 입력값(description/photos)은 1단계에서만 만들어지는 임시
+        // 상태라 URL만으로는 재구성할 수 없다 — extra가 없으면(새로고침 등)
+        // 1단계로 돌려보낸다.
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
+          final extra = _extraAs<Map<String, dynamic>>(state.extra);
+          final photos = extra?['photos'];
+          if (extra == null || extra['description'] is! String || photos is! List) {
+            return const ReportCreateScreen();
+          }
           return ReportAdditionalInfoScreen(
             description: extra['description'] as String,
-            photos: (extra['photos'] as List).cast<File>(),
+            photos: photos.cast<File>(),
           );
         },
       ),
       GoRoute(
         path: '/tenant/reports/result',
-        builder: (context, state) => ReportResultScreen(report: state.extra as Report),
+        // 이 경로는 :id가 없어 새로고침 시 서버에서 다시 불러올 방법이 없다
+        // (분석 직후 응답 그대로를 보여주는 화면이라서다). extra가 없으면
+        // 신고 목록으로 보낸다.
+        builder: (context, state) {
+          final report = _extraAs<Report>(state.extra);
+          if (report == null) return const ReportListScreen();
+          return ReportResultScreen(report: report);
+        },
       ),
       GoRoute(
         path: '/tenant/reports/:id',
-        builder: (context, state) => ReportDetailScreen(report: state.extra as Report),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<Report>(
+            initial: _extraAs<Report>(state.extra),
+            loader: () => ReportService.instance.getReport(id),
+            notFoundMessage: '신고 내역을 찾을 수 없습니다.',
+            fallbackRoute: '/tenant/reports',
+            builder: (context, report) => ReportDetailScreen(report: report),
+          );
+        },
       ),
       GoRoute(
         path: '/tenant/reports/:id/visit-schedule',
-        builder: (context, state) => ReportVisitScheduleScreen(report: state.extra as Report),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<Report>(
+            initial: _extraAs<Report>(state.extra),
+            loader: () => ReportService.instance.getReport(id),
+            notFoundMessage: '신고 내역을 찾을 수 없습니다.',
+            fallbackRoute: '/tenant/reports',
+            builder: (context, report) => ReportVisitScheduleScreen(report: report),
+          );
+        },
       ),
       GoRoute(
         path: '/tenant/reports/:id/progress',
-        builder: (context, state) => ReportProgressScreen(report: state.extra as Report),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<Report>(
+            initial: _extraAs<Report>(state.extra),
+            loader: () => ReportService.instance.getReport(id),
+            notFoundMessage: '신고 내역을 찾을 수 없습니다.',
+            fallbackRoute: '/tenant/reports',
+            builder: (context, report) => ReportProgressScreen(report: report),
+          );
+        },
       ),
 
       // 임대인
@@ -123,16 +196,43 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(path: '/technician/jobs', builder: (context, state) => const TechnicianJobListScreen()),
       GoRoute(
         path: '/technician/jobs/:id',
-        builder: (context, state) => JobDetailScreen(job: state.extra as TechnicianJob),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<TechnicianJob>(
+            initial: _extraAs<TechnicianJob>(state.extra),
+            loader: () => _findTechnicianJob(authProvider, id),
+            notFoundMessage: '배정된 작업을 찾을 수 없습니다.',
+            fallbackRoute: '/technician/jobs',
+            builder: (context, job) => JobDetailScreen(job: job),
+          );
+        },
       ),
       GoRoute(
         path: '/technician/jobs/:id/complete',
-        builder: (context, state) => RepairCompleteScreen(job: state.extra as TechnicianJob),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<TechnicianJob>(
+            initial: _extraAs<TechnicianJob>(state.extra),
+            loader: () => _findTechnicianJob(authProvider, id),
+            notFoundMessage: '배정된 작업을 찾을 수 없습니다.',
+            fallbackRoute: '/technician/jobs',
+            builder: (context, job) => RepairCompleteScreen(job: job),
+          );
+        },
       ),
       GoRoute(path: '/technician/requests', builder: (context, state) => const NewRequestListScreen()),
       GoRoute(
         path: '/technician/requests/:id',
-        builder: (context, state) => NewRequestDetailScreen(request: state.extra as VendorRequest),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ExtraOrFetch<VendorRequest>(
+            initial: _extraAs<VendorRequest>(state.extra),
+            loader: () => _findVendorRequest(authProvider, id),
+            notFoundMessage: '새 일감을 찾을 수 없습니다.',
+            fallbackRoute: '/technician/requests',
+            builder: (context, request) => NewRequestDetailScreen(request: request),
+          );
+        },
       ),
 
       // 공용 설정

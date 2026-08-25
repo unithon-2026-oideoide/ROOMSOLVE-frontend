@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../core/api_client.dart';
+import '../models/appliance_question.dart';
 import '../models/report.dart';
 import '../models/vendor.dart';
 import '../models/vendor_request.dart';
@@ -66,9 +67,26 @@ class ReportService {
     return Report.fromJson(data['report'] as Map<String, dynamic>);
   }
 
-  /// 세입자의 신고 접수 플로우 전체(사진 업로드 → AI 분석 → DB 저장)를 한 번에
-  /// 처리한다. report_additional_info_screen이 "다음 단계로"에서 호출하는
-  /// 유일한 진입점이다.
+  /// POST /api/reports/analyze. [answers]는 가전 하자의 보충 질문
+  /// (ownership/purchase_age)에 대한 답 — 처음 호출할 때는 비워 두고, 응답의
+  /// appliance.questions에 질문이 담겨 오면 답을 모아 채워서 다시 호출한다.
+  Future<Map<String, dynamic>> analyze({
+    required String description,
+    required List<String> photoUrls,
+    Map<String, String>? answers,
+  }) async {
+    final response = await _api.post('/api/reports/analyze', data: {
+      'description': description,
+      'photo_url': photoUrls.first,
+      'photo_urls': photoUrls,
+      if (answers != null && answers.isNotEmpty) 'answers': answers,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// 세입자의 신고 접수 플로우 전체(사진 업로드 → AI 분석 → [가전이면 보충 질문
+  /// 응답] → DB 저장)를 한 번에 처리한다. report_additional_info_screen이
+  /// "다음 단계로"에서 호출하는 유일한 진입점이다.
   ///
   /// landlord_id는 보내지 않는다 — createReport가 서버 쪽 linked_landlord_id로
   /// 채우게 둔다. 아직 임대인과 연결돼 있지 않으면 createReport 단계에서
@@ -78,34 +96,101 @@ class ReportService {
   /// [availableTimes]는 세입자가 집에 있는 시간대(예: "평일 오후, 주말 오전").
   /// 업체가 방문 시간을 제안할 때 참고하는 값이라 AI 분석에는 넘기지 않고
   /// 저장만 한다.
+  ///
+  /// [onApplianceQuestion]은 analyze 응답이 가전 하자 보충 질문을 돌려줄 때마다
+  /// 호출된다(ownership을 먼저 묻고, 필요하면 purchase_age를 이어서 묻는다 —
+  /// 한 번에 최대 1개씩 온다). 화면이 다이얼로그 등으로 답을 받아 값을
+  /// 돌려주면 그 답으로 analyze를 다시 호출해 판정을 이어간다. 콜백을 안 주면
+  /// (질문에 답할 UI가 없으면) 판정 없이 저장해 안내가 틀리는 상황을 막기 위해
+  /// 예외를 던진다.
+  ///
+  /// 판정이 끝나면(=liability가 채워지면) 부담 주체·근거·경고 문구를 description
+  /// 끝에 덧붙여 저장한다 — reports 테이블에 이 판정을 담을 별도 컬럼이 없어서다
+  /// (같은 화면의 "문제 발생 시점" 등 다른 보충 정보도 같은 방식으로 description에
+  /// 묶어 저장한다). report_detail_screen.dart가 이 태그를 다시 읽어 "비용 부담"
+  /// 항목에 실제 판정 결과를 보여준다(category_helpers.dart의
+  /// applianceLiabilityFromDescription 참고).
   Future<Report> submitReport({
     required String description,
     List<File> photos = const [],
     String? availableTimes,
     void Function(int completed, int total)? onUploadProgress,
+    Future<String?> Function(ApplianceQuestion question)? onApplianceQuestion,
   }) async {
     if (photos.isEmpty) {
       throw ApiException('사진을 최소 1장 첨부해야 합니다.');
     }
     final photoUrls = await uploadPhotos(photos, onProgress: onUploadProgress);
 
-    final analyzeResponse = await _api.post('/api/reports/analyze', data: {
-      'description': description,
-      'photo_url': photoUrls.first,
-      'photo_urls': photoUrls,
-    });
-    final analysis = analyzeResponse.data as Map<String, dynamic>;
+    final answers = <String, String>{};
+    var analysis = await analyze(description: description, photoUrls: photoUrls);
+
+    while (true) {
+      final appliance = analysis['appliance'] as Map<String, dynamic>?;
+      final questions = (appliance?['questions'] as List?) ?? const [];
+      if (appliance == null || questions.isEmpty) break;
+
+      if (onApplianceQuestion == null) {
+        throw ApiException('가전 하자의 수리비 부담 주체를 확인하려면 추가 정보가 필요합니다.');
+      }
+      final question = ApplianceQuestion.fromJson(questions.first as Map<String, dynamic>);
+      final answer = await onApplianceQuestion(question);
+      if (answer == null) {
+        throw ApiException('가전 정보 확인이 취소되어 신고를 접수하지 못했습니다.');
+      }
+      answers[question.id] = answer;
+      analysis = await analyze(description: description, photoUrls: photoUrls, answers: answers);
+    }
+
+    final appliance = analysis['appliance'] as Map<String, dynamic>?;
 
     return createReport(
-      description: description,
+      description: _describeWithApplianceJudgement(description, appliance),
       photoUrls: photoUrls,
       category: analysis['category']?.toString(),
       severity: analysis['severity']?.toString(),
+      // 가전 하자로 판정이 끝났으면(appliance.liability != null) 서버가 이미
+      // recommended_path를 규칙 기반 값으로 덮어써서 돌려준다(LLM 1차 추측보다
+      // 우선). 그대로 넘기면 된다.
       recommendedPath: analysis['recommended_path']?.toString(),
       selfFixGuide: analysis['self_fix_guide']?.toString(),
       applianceType: analysis['appliance_type']?.toString(),
       availableTimes: availableTimes,
     );
+  }
+
+  /// 가전 부담 주체 판정 결과를 description 끝에 "[가전 하자 판정]" 태그로
+  /// 덧붙인다. 가전이 아니거나(appliance == null) 아직 판정이 끝나지 않았으면
+  /// (liability == null) 원본 description을 그대로 돌려준다.
+  String _describeWithApplianceJudgement(String description, Map<String, dynamic>? appliance) {
+    final liability = appliance?['liability']?.toString();
+    if (appliance == null || liability == null) return description;
+
+    final notice = appliance['notice']?.toString();
+    final warning = appliance['warning']?.toString();
+    final lines = [
+      description,
+      '',
+      '[가전 하자 판정] 비용 부담: ${_applianceLiabilityLabel(liability)}',
+      if (notice != null && notice.isNotEmpty) notice,
+      if (warning != null && warning.isNotEmpty) '⚠ $warning',
+    ];
+    return lines.join('\n');
+  }
+
+  String _applianceLiabilityLabel(String liability) {
+    switch (liability) {
+      case 'tenant':
+        return '임차인 부담';
+      case 'manufacturer_warranty':
+        return '제조사 무상 수리 대상';
+      case 'landlord':
+        return '임대인 부담';
+      case 'negotiable':
+        return '협의 필요 (계약서 특약 확인)';
+      default:
+        return '확인 필요';
+    }
   }
 
   /// 사진 한 장을 /api/uploads에 업로드하고 URL을 반환한다.

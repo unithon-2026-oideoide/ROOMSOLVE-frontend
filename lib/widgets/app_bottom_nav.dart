@@ -47,7 +47,10 @@ class AppBottomNav extends StatelessWidget {
               color: current == AppBottomNavTab.reports ? AppColors.brandMain : AppColors.gray5,
               size: 30,
             ),
-            onPressed: () => context.push(reportsPath),
+            // 홈 탭과 마찬가지로 go()를 쓴다. push()였을 때는 이미 이 탭에 있는
+            // 상태에서 같은 아이콘을 다시 누를 때마다 같은 화면이 스택에 계속
+            // 쌓여서, 뒤로가기를 여러 번 눌러야 빠져나올 수 있었다.
+            onPressed: () => context.go(reportsPath),
           ),
           IconButton(
             icon: Icon(
@@ -55,7 +58,7 @@ class AppBottomNav extends StatelessWidget {
               color: current == AppBottomNavTab.settings ? AppColors.brandMain : AppColors.gray5,
               size: 30,
             ),
-            onPressed: () => context.push('/settings'),
+            onPressed: () => context.go('/settings'),
           ),
         ],
       ),
