@@ -156,11 +156,14 @@ class ReportService {
     return list.map((e) => Vendor.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// GET /api/vendors/requests?vendorId= — 업체가 아직 견적을 안 낸 신고 목록.
-  /// AuthProvider.currentUser?.vendorId(vendors.id — users.id 아님)로 조회한다.
+  /// GET /api/vendors/requests?technicianId= — 업체가 아직 견적을 안 낸 신고 목록.
+  /// technicianId는 AuthProvider.currentUser?.id(users.id) — 로그인만 하면 항상
+  /// 있는 값이라, vendorId(vendors.id, technician signup/login에서만 오는 값)보다
+  /// 이걸 쓰는 게 더 안전하다. 백엔드가 vendors.user_id로 알아서 업체를 찾아
+  /// 응답에 vendor까지 함께 준다(vendorId로도 여전히 부를 수 있지만 안 씀).
   /// 새 업체 계정이면 결과가 비어 있을 수 있고, 그건 정상이다.
-  Future<List<VendorRequest>> getVendorRequests({required String vendorId}) async {
-    final response = await _api.get('/api/vendors/requests', queryParameters: {'vendorId': vendorId});
+  Future<List<VendorRequest>> getVendorRequests({required String technicianId}) async {
+    final response = await _api.get('/api/vendors/requests', queryParameters: {'technicianId': technicianId});
     final data = response.data as Map<String, dynamic>;
     final list = (data['requests'] as List?) ?? [];
     return list.map((e) => VendorRequest.fromJson(e as Map<String, dynamic>)).toList();

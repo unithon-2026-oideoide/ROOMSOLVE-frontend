@@ -29,7 +29,10 @@ class _NewRequestDetailScreenState extends State<NewRequestDetailScreen> {
   final _priceController = TextEditingController();
   DateTime? _proposedVisitTime;
   bool _isSubmitting = false;
-  bool _submitted = false;
+  // 목록 화면에서 넘어온 alreadyQuoted가 true면 폼을 애초에 숨긴다 — DB에
+  // 같은 (report, vendor) 쌍의 중복 견적을 막는 제약이 없어서, 화면에서
+  // 막지 않으면 재제출로 quotes에 중복 행이 쌓인다.
+  late bool _submitted = widget.request.alreadyQuoted;
 
   @override
   void dispose() {
@@ -140,8 +143,8 @@ class _NewRequestDetailScreenState extends State<NewRequestDetailScreen> {
                             style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
                           ),
                           const SizedBox(height: 8),
-                          if (request.photoUrls.isNotEmpty)
-                            for (final url in request.photoUrls)
+                          if (request.photoUrls.isNotEmpty || request.photoUrl != null)
+                            for (final url in request.photoUrls.isNotEmpty ? request.photoUrls : [request.photoUrl!])
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: ClipRRect(

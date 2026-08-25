@@ -12,10 +12,12 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "새 일감 목록 화면". GET /api/vendors/requests(vendorId=)로, 업체의 전문
-/// 분야에 해당하고 아직 견적을 안 낸 신고를 가져온다. 배정 작업 목록(이미
-/// repair_schedule이 있는 것)과는 별개다 — 여기서 견적을 내야 그중 하나가
-/// 선택됐을 때 비로소 배정 작업이 된다.
+/// "새 일감 목록 화면". GET /api/vendors/requests(technicianId=)로, 업체의 전문
+/// 분야에 해당하는 신고를 가져온다. 배정 작업 목록(이미 repair_schedule이
+/// 있는 것)과는 별개다 — 여기서 견적을 내야 그중 하나가 선택됐을 때 비로소
+/// 배정 작업이 된다. alreadyQuoted가 true인 항목은 이미 견적을 낸 신고라
+/// 목록에서 구분해서 보여준다(재제출을 막는 제약이 DB에 없어서, 화면에서
+/// 막지 않으면 quotes에 중복 행이 쌓인다).
 class NewRequestListScreen extends StatefulWidget {
   const NewRequestListScreen({super.key});
 
@@ -34,13 +36,13 @@ class _NewRequestListScreenState extends State<NewRequestListScreen> {
   }
 
   Future<void> _load() async {
-    final vendorId = context.read<AuthProvider>().currentUser?.vendorId;
-    if (vendorId == null || vendorId.isEmpty) {
-      setState(() => _errorMessage = '업체 정보를 확인할 수 없습니다. 다시 로그인해주세요.');
+    final technicianId = context.read<AuthProvider>().currentUser?.id;
+    if (technicianId == null || technicianId.isEmpty) {
+      setState(() => _errorMessage = '사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.');
       return;
     }
     try {
-      final requests = await ReportService.instance.getVendorRequests(vendorId: vendorId);
+      final requests = await ReportService.instance.getVendorRequests(technicianId: technicianId);
       if (mounted) setState(() { _requests = requests; _errorMessage = null; });
     } on ApiException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
@@ -133,6 +135,14 @@ class _RequestRow extends StatelessWidget {
             Row(
               children: [
                 Expanded(child: Text(request.title, style: AppTextStyles.bodyRegular16(color: AppColors.gray8))),
+                if (request.alreadyQuoted) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(color: AppColors.gray5, borderRadius: BorderRadius.circular(999)),
+                    child: Text('견적 제출됨', style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
