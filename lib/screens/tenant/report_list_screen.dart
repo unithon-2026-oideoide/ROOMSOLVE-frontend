@@ -23,7 +23,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
   String? _errorMessage;
   String _filter = '전체';
 
-  static const _filters = ['전체', '접수 완료', '처리 중', '완료'];
+  // reports.status는 실제로 pending/approved/rejected 세 값만 나온다
+  // (landlord.controller.ts approveRequest 확인함). Report.statusLabel과 맞춘다.
+  static const _filters = ['전체', '접수 완료', '승인됨', '거절됨'];
 
   @override
   void initState() {
@@ -55,17 +57,14 @@ class _ReportListScreenState extends State<ReportListScreen> {
     }
   }
 
-  String _statusLabel(Report r) {
-    final s = r.status?.toLowerCase();
-    if (s == null || s.isEmpty || s == 'pending') return '접수 완료';
-    if (s == 'completed' || s == 'done' || s.contains('완료')) return '완료';
-    return '처리 중';
-  }
-
   Color _statusColor(String label) {
     switch (label) {
       case '접수 완료':
         return AppColors.accentGreen;
+      case '승인됨':
+        return AppColors.brandMain;
+      case '거절됨':
+        return AppColors.accentRed;
       case '완료':
         return AppColors.gray5;
       default:
@@ -76,7 +75,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
   @override
   Widget build(BuildContext context) {
     final all = _reports ?? const [];
-    final filtered = all.where((r) => _filter == '전체' || _statusLabel(r) == _filter).toList();
+    final filtered = all.where((r) => _filter == '전체' || r.statusLabel == _filter).toList();
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -137,8 +136,8 @@ class _ReportListScreenState extends State<ReportListScreen> {
                                 for (final r in filtered) ...[
                                   _ReportRow(
                                     report: r,
-                                    statusLabel: _statusLabel(r),
-                                    statusColor: _statusColor(_statusLabel(r)),
+                                    statusLabel: r.statusLabel,
+                                    statusColor: _statusColor(r.statusLabel),
                                     onTap: () => context.push('/tenant/reports/${r.id}', extra: r),
                                   ),
                                   const SizedBox(height: 12),
@@ -200,7 +199,7 @@ class _ReportRow extends StatelessWidget {
                 style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
               ),
             const SizedBox(height: 8),
-            Text(report.status ?? '처리 대기 중', style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
+            Text(report.statusLabel, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
           ],
         ),
       ),
