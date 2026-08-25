@@ -190,10 +190,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         children: [
                           _Row('문제 유형', categoryLabel(report.category)),
                           _Row('긴급도', severityLabel(report.severity)),
-                          _Row(
-                            '비용 부담',
-                            applianceLiabilityFromDescription(report.description) ?? '임대인 승인 후 확정',
-                          ),
+                          _Row('비용 부담', '임대인 부담'),
                         ],
                       ),
                     ),

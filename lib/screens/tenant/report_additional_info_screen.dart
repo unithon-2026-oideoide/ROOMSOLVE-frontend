@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/api_client.dart';
-import '../../models/appliance_question.dart';
 import '../../models/report.dart';
 import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
@@ -89,7 +88,6 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
             _statusMessage = completed >= total ? 'AI 분석 및 신고 접수 중...' : '사진 업로드 중... ($completed/$total)';
           });
         },
-        onApplianceQuestion: _askApplianceQuestion,
       );
       if (mounted) context.push('/tenant/reports/result', extra: result);
     } on PhotoUploadException catch (e) {
@@ -106,42 +104,6 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
         });
       }
     }
-  }
-
-  /// ReportService.submitReport가 가전 하자 보충 질문(ownership/purchase_age)을
-  /// 돌려줄 때마다 호출된다. 선택지를 다이얼로그로 보여주고 고른 값을 돌려준다 —
-  /// 사용자가 다이얼로그를 닫아버리면(뒤로가기 등) null을 돌려주고, 그 경우
-  /// submitReport가 접수를 취소하며 예외를 던진다.
-  Future<String?> _askApplianceQuestion(ApplianceQuestion question) async {
-    if (!mounted) return null;
-    setState(() => _statusMessage = '가전 정보 확인이 필요합니다...');
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(question.text, style: AppTextStyles.bodySemiBold14(color: AppColors.black)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final option in question.options)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(option.value),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.brandMain),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text(option.label, style: AppTextStyles.bodyRegular14(color: AppColors.brandDark)),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   BoxDecoration get _fieldBoxDecoration => BoxDecoration(
