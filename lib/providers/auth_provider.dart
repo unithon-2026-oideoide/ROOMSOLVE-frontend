@@ -27,14 +27,17 @@ class AuthProvider extends ChangeNotifier {
         final id = await AuthStorage.instance.readUserId();
         final name = await AuthStorage.instance.readName();
         final phone = await AuthStorage.instance.readPhone();
+        final email = await AuthStorage.instance.readEmail();
+        final createdAt = await AuthStorage.instance.readCreatedAt();
         final landlordCode = await AuthStorage.instance.readLandlordCode();
         final linkedLandlordId = await AuthStorage.instance.readLinkedLandlordId();
         final vendorId = await AuthStorage.instance.readVendorId();
         _currentUser = AppUser(
           id: id ?? '',
-          email: '',
+          email: email ?? '',
           name: name,
           phone: phone,
+          createdAt: createdAt,
           role: userRoleFromString(roleString),
           landlordCode: landlordCode,
           linkedLandlordId: linkedLandlordId,

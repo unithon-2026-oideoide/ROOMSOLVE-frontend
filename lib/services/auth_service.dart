@@ -32,7 +32,7 @@ class AuthService {
       if (role == UserRole.technician) 'categories': categories,
     });
     final data = response.data as Map<String, dynamic>;
-    return _handleAuthResponse(data);
+    return _handleAuthResponse(data, fallbackEmail: email);
   }
 
   Future<({AppUser user, bool hasSession})> login({
@@ -44,7 +44,7 @@ class AuthService {
       'password': password,
     });
     final data = response.data as Map<String, dynamic>;
-    return _handleAuthResponse(data);
+    return _handleAuthResponse(data, fallbackEmail: email);
   }
 
   /// PATCH /api/users/link-landlord — 임대인 초대 코드로 현재 로그인한 사용자를
@@ -61,7 +61,10 @@ class AuthService {
     await AuthStorage.instance.clear();
   }
 
-  Future<({AppUser user, bool hasSession})> _handleAuthResponse(Map<String, dynamic> data) async {
+  Future<({AppUser user, bool hasSession})> _handleAuthResponse(
+    Map<String, dynamic> data, {
+    required String fallbackEmail,
+  }) async {
     // access_token은 session 아래에 있다 (POST /api/auth/login,signup 응답: {user, session}).
     // session은 이메일 인증 대기 중이면 null.
     final session = data['session'] as Map<String, dynamic>?;
@@ -73,7 +76,22 @@ class AuthService {
     // technician일 때만 signup/login 둘 다 내려준다. AppUser.fromJson은 data['user']만
     // 받아 vendor를 모르므로, 여기서 꺼내 copyWith로 붙인다.
     final vendor = data['vendor'] as Map<String, dynamic>?;
-    final user = AppUser.fromJson(data['user'] ?? data).copyWith(vendorId: vendor?['id']?.toString());
+    var user = AppUser.fromJson(data['user'] ?? data).copyWith(vendorId: vendor?['id']?.toString());
+    // 백엔드 User 응답에는 email이 없다(Supabase Auth 세션 쪽에만 있음) — 로그인/가입
+    // 폼에 입력한 값을 그대로 채워 계정 정보 화면에 표시할 수 있게 한다.
+    if (user.email.isEmpty) {
+      user = AppUser(
+        id: user.id,
+        email: fallbackEmail,
+        name: user.name,
+        phone: user.phone,
+        createdAt: user.createdAt,
+        role: user.role,
+        landlordCode: user.landlordCode,
+        linkedLandlordId: user.linkedLandlordId,
+        vendorId: user.vendorId,
+      );
+    }
     await _persistUser(user);
     return (user: user, hasSession: token != null);
   }
@@ -83,6 +101,8 @@ class AuthService {
     await AuthStorage.instance.saveUserId(user.id);
     await AuthStorage.instance.saveName(user.name);
     await AuthStorage.instance.savePhone(user.phone);
+    await AuthStorage.instance.saveEmail(user.email);
+    await AuthStorage.instance.saveCreatedAt(user.createdAt);
     await AuthStorage.instance.saveLandlordCode(user.landlordCode);
     await AuthStorage.instance.saveLinkedLandlordId(user.linkedLandlordId);
     await AuthStorage.instance.saveVendorId(user.vendorId);

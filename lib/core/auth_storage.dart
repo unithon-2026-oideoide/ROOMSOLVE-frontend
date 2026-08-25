@@ -13,6 +13,8 @@ class AuthStorage {
   static const _userIdKey = 'user_id';
   static const _nameKey = 'user_name';
   static const _phoneKey = 'user_phone';
+  static const _emailKey = 'user_email';
+  static const _createdAtKey = 'user_created_at';
   static const _landlordCodeKey = 'landlord_code';
   static const _linkedLandlordIdKey = 'linked_landlord_id';
   static const _vendorIdKey = 'vendor_id';
@@ -62,6 +64,27 @@ class AuthStorage {
     return _storage.read(key: _phoneKey);
   }
 
+  /// 로그인/회원가입 시 입력한 email. 앱 재시작 후 세션 복원 시에도 계정 정보
+  /// 화면에 다시 보여줄 수 있도록 저장해둔다.
+  Future<void> saveEmail(String? email) {
+    if (email == null || email.isEmpty) return _storage.delete(key: _emailKey);
+    return _storage.write(key: _emailKey, value: email);
+  }
+
+  Future<String?> readEmail() {
+    return _storage.read(key: _emailKey);
+  }
+
+  Future<void> saveCreatedAt(DateTime? createdAt) {
+    if (createdAt == null) return _storage.delete(key: _createdAtKey);
+    return _storage.write(key: _createdAtKey, value: createdAt.toIso8601String());
+  }
+
+  Future<DateTime?> readCreatedAt() async {
+    final value = await _storage.read(key: _createdAtKey);
+    return value != null ? DateTime.tryParse(value) : null;
+  }
+
   /// role이 landlord인 사용자만 값이 있다. 세입자가 초대 코드로 연결할 때 보여줄
   /// 필요는 없지만(코드는 임대인 본인만 봄), 앱 재시작 후 계정 정보 화면에서
   /// 다시 보여줄 수 있도록 저장해둔다.
@@ -102,6 +125,8 @@ class AuthStorage {
     await _storage.delete(key: _userIdKey);
     await _storage.delete(key: _nameKey);
     await _storage.delete(key: _phoneKey);
+    await _storage.delete(key: _emailKey);
+    await _storage.delete(key: _createdAtKey);
     await _storage.delete(key: _landlordCodeKey);
     await _storage.delete(key: _linkedLandlordIdKey);
     await _storage.delete(key: _vendorIdKey);

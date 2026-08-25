@@ -11,8 +11,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "계정 정보 화면". 서비스 가입일 필드는 백엔드 AppUser 모델에 없어
-/// 디자인의 예시 문구를 그대로 표시한다.
+/// "계정 정보 화면".
 class AccountInfoScreen extends StatelessWidget {
   const AccountInfoScreen({super.key});
 
