@@ -116,17 +116,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         children: [
                           _Row('문제 유형', categoryLabel(report.category)),
                           _Row('긴급도', severityLabel(report.severity)),
-                          // 가전 하자는 소유 관계·보증기간에 따라 부담 주체가 갈린다
-                          // (report_service.dart의 [가전 하자 판정] 태그 참고). 그
-                          // 판정이 없는 일반 하자에서만 "임대인 부담"이 사실이므로,
-                          // 판정이 있으면 그 결과를, 없으면 확정 전임을 보여준다 —
-                          // 예전에는 판정 결과와 무관하게 항상 "임대인 부담"으로
-                          // 고정 표시해서, 임차인 부담·제조사 보증 대상인 가전도
-                          // 임대인이 낸다고 잘못 안내했다.
-                          _Row(
-                            '비용 부담',
-                            applianceLiabilityFromDescription(report.description) ?? '임대인 승인 후 확정',
-                          ),
+                          _Row('비용 부담', '임대인 부담'),
                         ],
                       ),
                     ),
