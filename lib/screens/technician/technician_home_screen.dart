@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/technician_job_loader.dart';
@@ -11,7 +12,7 @@ import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
 /// "수리기사 홈 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
-/// 일정을 가져온다. 배정된 일정이 없으면 [mockTechnicianJobs]로 대체한다.
+/// 일정을 가져온다. 배정된 일정이 없으면 빈 상태 안내를 보여준다.
 class TechnicianHomeScreen extends StatefulWidget {
   const TechnicianHomeScreen({super.key});
 
@@ -21,6 +22,7 @@ class TechnicianHomeScreen extends StatefulWidget {
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   List<TechnicianJob>? _jobs;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,8 +32,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
   Future<void> _load() async {
     final userId = context.read<AuthProvider>().currentUser?.id;
-    final jobs = await loadTechnicianJobs(userId);
-    if (mounted) setState(() => _jobs = jobs);
+    try {
+      final jobs = await loadTechnicianJobs(userId);
+      if (mounted) setState(() { _jobs = jobs; _errorMessage = null; });
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = '배정 작업을 불러오지 못했습니다: $e');
+    }
   }
 
   @override
@@ -39,6 +47,32 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     final user = context.watch<AuthProvider>().currentUser;
     final userName = user?.name ?? user?.email.split('@').first ?? '기사';
     final jobs = _jobs;
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyRegular14(color: AppColors.accentRed),
+                    ),
+                  ),
+                ),
+              ),
+              const AppBottomNav(current: AppBottomNavTab.home, homePath: '/technician', reportsPath: '/technician/jobs'),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (jobs == null) {
       return Scaffold(
