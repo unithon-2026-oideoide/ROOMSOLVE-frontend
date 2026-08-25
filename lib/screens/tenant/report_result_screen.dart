@@ -402,8 +402,13 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
   }
 
   Future<void> _load() async {
+    final category = widget.report.category;
+    if (category == null) {
+      setState(() => _errorMessage = '문제 유형을 확인할 수 없어 업체를 찾지 못했습니다.');
+      return;
+    }
     try {
-      final result = await ReportService.instance.matchVendors(reportId: widget.report.id);
+      final result = await ReportService.instance.matchVendors(category: category);
       if (mounted) setState(() => _vendors = result);
     } on ApiException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
