@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
+
+// Figma에서 내보낸 원본 아이콘. 셋 다 채우기 없이 선(stroke)으로만 그려져
+// 있어서, 색은 SvgPicture의 colorFilter로 상태(선택/비선택)에 맞게 입힌다 —
+// SVG 파일 자체에 박힌 색(#002BB2)은 무시된다.
+const _homeIcon = 'assets/icons/nav_home.svg';
+const _reportsIcon = 'assets/icons/nav_reports.svg';
+const _settingsIcon = 'assets/icons/nav_settings.svg';
 
 enum AppBottomNavTab { home, reports, settings }
 
@@ -37,12 +45,12 @@ class AppBottomNav extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _NavTab(
-              icon: Icons.home_rounded,
+              iconAsset: _homeIcon,
               active: current == AppBottomNavTab.home,
               onTap: () => context.go(homePath),
             ),
             _NavTab(
-              icon: Icons.assignment_rounded,
+              iconAsset: _reportsIcon,
               active: current == AppBottomNavTab.reports,
               // 홈 탭과 마찬가지로 go()를 쓴다. push()였을 때는 이미 이 탭에 있는
               // 상태에서 같은 아이콘을 다시 누를 때마다 같은 화면이 스택에 계속
@@ -50,7 +58,7 @@ class AppBottomNav extends StatelessWidget {
               onTap: () => context.go(reportsPath),
             ),
             _NavTab(
-              icon: Icons.settings_rounded,
+              iconAsset: _settingsIcon,
               active: current == AppBottomNavTab.settings,
               onTap: () => context.go('/settings'),
             ),
@@ -62,9 +70,9 @@ class AppBottomNav extends StatelessWidget {
 }
 
 class _NavTab extends StatelessWidget {
-  const _NavTab({required this.icon, required this.active, required this.onTap});
+  const _NavTab({required this.iconAsset, required this.active, required this.onTap});
 
-  final IconData icon;
+  final String iconAsset;
   final bool active;
   final VoidCallback onTap;
 
@@ -81,7 +89,12 @@ class _NavTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 24, color: color),
+            SvgPicture.asset(
+              iconAsset,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
             const SizedBox(height: 5),
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),

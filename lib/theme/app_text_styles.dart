@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
 /// Typography ramp extracted from Figma variable definitions across all
 /// screens in "ROOMSOLVE 와이어프레임".
 ///
-/// Figma font family: "Pretendard". Pretendard is not published on Google
-/// Fonts (google_fonts package exposes only fonts.google.com's catalog), so
-/// this project substitutes Noto Sans KR — the closest Google Fonts
-/// alternative with matching Korean glyph coverage. 원래 Pretendard, 대체
-/// 폰트(Noto Sans KR) 사용 중.
+/// Figma font family: "Pretendard". Pretendard가 Google Fonts에 없어서
+/// (google_fonts 패키지는 fonts.google.com 카탈로그만 제공) 한동안 가장
+/// 가까운 대체 폰트(Noto Sans KR)를 썼는데, 이제 실제 Pretendard 폰트 파일을
+/// assets/fonts/Pretendard에 번들해서 원래 폰트를 그대로 쓴다
+/// (pubspec.yaml의 fonts 섹션 참고).
 ///
 /// Figma only defines the size/weight combinations found below — there is
 /// no "Subtitle1/2/3" or "Body1/2/3" naming in the file itself. The primary
@@ -20,12 +19,15 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
+  static const String fontFamily = 'Pretendard';
+
   static TextStyle _base({
     required double fontSize,
     required FontWeight fontWeight,
     Color color = AppColors.black,
   }) {
-    return GoogleFonts.notoSansKr(
+    return TextStyle(
+      fontFamily: fontFamily,
       fontSize: fontSize,
       fontWeight: fontWeight,
       height: 1.0,
