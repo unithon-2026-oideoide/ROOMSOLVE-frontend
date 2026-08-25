@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/technician_job_loader.dart';
@@ -22,6 +23,8 @@ class TechnicianJobListScreen extends StatefulWidget {
 class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
   String _filter = '전체';
   List<TechnicianJob>? _allJobs;
+  bool _isMock = false;
+  String? _errorMessage;
 
   static const _filters = ['전체', '방문 예정', '진행 중', '완료'];
 
@@ -40,13 +43,50 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
 
   Future<void> _load() async {
     final userId = context.read<AuthProvider>().currentUser?.id;
-    final jobs = await loadTechnicianJobs(userId);
-    if (mounted) setState(() => _allJobs = jobs);
+    try {
+      final result = await loadTechnicianJobs(userId);
+      if (mounted) {
+        setState(() {
+          _allJobs = result.jobs;
+          _isMock = result.isMock;
+          _errorMessage = null;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = '배정 작업을 불러오지 못했습니다: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final allJobs = _allJobs;
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyRegular14(color: AppColors.accentRed),
+                    ),
+                  ),
+                ),
+              ),
+              const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/technician', reportsPath: '/technician/jobs'),
+            ],
+          ),
+        ),
+      );
+    }
     if (allJobs == null) {
       return Scaffold(
         backgroundColor: AppColors.white,
@@ -74,6 +114,13 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                 children: [
                   Text('배정 작업 목록', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                  if (_isMock) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '아직 실제 배정이 없어 예시 데이터를 보여드립니다.',
+                      style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Container(
                     width: double.infinity,

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
-
-const _categoryOptions = ['배관·누수', '전기·조명', '냉난방 기기', '도어락·잠금장치', '창문·유리'];
-const _defaultSelectedCategories = {'배관·누수', '전기·조명', '도어락·잠금장치'};
 
 class AutoApprovalSettingScreen extends StatefulWidget {
   const AutoApprovalSettingScreen({super.key});
@@ -19,12 +17,23 @@ class AutoApprovalSettingScreen extends StatefulWidget {
 
 class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
   final _maxAmountController = TextEditingController();
-  final Set<String> _selectedCategories = {..._defaultSelectedCategories};
+  // 백엔드 REPAIR_CATEGORIES 코드(plumbing 등)를 담는다 — 예전에는 이 화면만
+  // 쓰는 별도의 한글 문자열('배관·누수' 등)을 담아서, 저장을 눌러도 백엔드가
+  // 이해하는 category 값과 전혀 안 맞아 실제로는 아무 카테고리도 저장된 적이
+  // 없었다.
+  final Set<String> _selectedCategories = {};
   bool _excludeAiRisk = true;
   bool _excludeFrequentTenant = true;
   bool _excludeNoPhoto = true;
+  bool _isLoading = true;
   bool _isSubmitting = false;
   String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   void dispose() {
@@ -32,20 +41,56 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
     super.dispose();
   }
 
+  // 저장된 카테고리별 한도를 불러와 체크박스/금액을 채운다. 예전에는 이 조회
+  // 자체가 없어서(백엔드에 GET이 없었음) 화면을 열 때마다 하드코딩된 기본값으로
+  // 리셋됐고, "설정 저장"을 누르면 그 기본값이 기존 설정을 덮어썼다.
+  Future<void> _load() async {
+    try {
+      final policies = await LandlordService.instance.getAutoApprovalPolicies();
+      if (!mounted) return;
+      setState(() {
+        _selectedCategories
+          ..clear()
+          ..addAll(policies.map((p) => p['category']?.toString()).whereType<String>());
+        // 화면은 카테고리마다 다른 금액을 따로 보여줄 UI가 없다(디자인상 금액 한도가
+        // 하나) — 저장된 값이 있으면 그중 하나를 대표로 보여준다. 카테고리별로
+        // 다른 금액을 저장해 뒀다면(예: API로 직접 넣은 경우) 이 화면에서 "저장"을
+        // 누르는 순간 전부 같은 금액으로 통일된다.
+        if (policies.isNotEmpty) {
+          final limit = policies.first['auto_approve_limit'];
+          if (limit != null) _maxAmountController.text = limit.toString();
+        }
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _message = e.message; _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _message = '설정을 불러오지 못했습니다: $e'; _isLoading = false; });
+    }
+  }
+
   Future<void> _save() async {
+    final limit = int.tryParse(_maxAmountController.text.trim());
+    if (limit == null || limit < 0) {
+      setState(() => _message = '자동 승인 금액 한도를 올바르게 입력해주세요.');
+      return;
+    }
+    if (_selectedCategories.isEmpty) {
+      setState(() => _message = '자동 처리를 허용할 카테고리를 최소 1개 선택해주세요.');
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
       _message = null;
     });
     try {
-      await LandlordService.instance.setAutoApprovalPolicy(policy: {
-        'enabled': _selectedCategories.isNotEmpty,
-        'maxAmount': num.tryParse(_maxAmountController.text) ?? 0,
-        'categories': _selectedCategories.toList(),
-        'excludeAiRisk': _excludeAiRisk,
-        'excludeFrequentTenant': _excludeFrequentTenant,
-        'excludeNoPhoto': _excludeNoPhoto,
-      });
+      // 백엔드는 카테고리 하나씩만 저장한다(POST가 category 단일 값을 받음) —
+      // 선택한 카테고리 수만큼 순서대로 호출한다. 예전 선택에서 뺀 카테고리의
+      // 기존 저장값은 삭제 API가 없어 이 화면에서는 지울 수 없다.
+      for (final category in _selectedCategories) {
+        await LandlordService.instance.setAutoApprovalPolicy(category: category, autoApproveLimit: limit);
+      }
       setState(() => _message = '설정이 저장되었습니다.');
     } on ApiException catch (e) {
       setState(() => _message = e.message);
@@ -56,14 +101,14 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
     }
   }
 
-  Widget _checkboxRow(String label) {
-    final checked = _selectedCategories.contains(label);
+  Widget _checkboxRow(String category, String label) {
+    final checked = _selectedCategories.contains(category);
     return GestureDetector(
       onTap: () => setState(() {
         if (checked) {
-          _selectedCategories.remove(label);
+          _selectedCategories.remove(category);
         } else {
-          _selectedCategories.add(label);
+          _selectedCategories.add(category);
         }
       }),
       child: Padding(
@@ -109,7 +154,9 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
           children: [
             const AppTopBar(),
             Expanded(
-              child: SingleChildScrollView(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,13 +209,17 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
                         children: [
                           Text('자동 처리 허용 카테고리', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
                           const SizedBox(height: 8),
-                          for (final c in _categoryOptions) _checkboxRow(c),
+                          for (final entry in categoryLabels.entries) _checkboxRow(entry.key, entry.value),
                           const SizedBox(height: 8),
                           Text('선택한 카테고리의 요청만 자동 처리 대상이 됩니다.', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // landlord_auto_approval_policy 테이블에 이 예외 조건들을 저장할
+                    // 컬럼이 없다 — 백엔드가 category/auto_approve_limit만 받는다.
+                    // 그래서 이 카드의 스위치는 notification_settings_screen.dart와
+                    // 같은 이유로 로컬 상태만 바꾸고 서버에는 반영되지 않는다.
                     _Card(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

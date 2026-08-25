@@ -9,21 +9,6 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-String _repairStatusLabel(String status) {
-  switch (status) {
-    case 'scheduled':
-      return '방문 일정 등록';
-    case 'confirmed':
-      return '방문 일정 확정';
-    case 'in_progress':
-      return '현장 수리 진행 중';
-    case 'done':
-      return '수리 완료';
-    default:
-      return status;
-  }
-}
-
 String _formatDateTime(String isoString) {
   final dt = DateTime.tryParse(isoString);
   if (dt == null) return isoString;
@@ -86,7 +71,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     final rejected = report.isRejected;
     final badgeLabel = rejected
         ? '거절됨'
-        : (_isCompleted ? '완료' : (_currentStatus != null ? _repairStatusLabel(_currentStatus!) : report.statusLabel));
+        : (_isCompleted ? '완료' : (_currentStatus != null ? repairStatusLabel(_currentStatus) : report.statusLabel));
     final badgeColor = rejected ? AppColors.accentRed : AppColors.brandLight;
 
     return Scaffold(
@@ -185,7 +170,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                       else if (_timeline != null && _timeline!.isNotEmpty)
                         for (int i = 0; i < _timeline!.length; i++) ...[
                           _TimelineCard(
-                            title: _repairStatusLabel(_timeline![i]['status']?.toString() ?? ''),
+                            title: repairStatusLabel(_timeline![i]['status']?.toString()),
                             done: true,
                             subtitle: _formatDateTime(_timeline![i]['changed_at']?.toString() ?? ''),
                           ),

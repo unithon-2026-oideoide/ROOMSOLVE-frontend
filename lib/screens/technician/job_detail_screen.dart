@@ -6,6 +6,7 @@ import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/repair_service.dart';
+import '../../services/technician_job_loader.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
@@ -25,6 +26,17 @@ class JobDetailScreen extends StatefulWidget {
 
 class _JobDetailScreenState extends State<JobDetailScreen> {
   bool _isSubmittingSchedule = false;
+  // widget.job은 라우트로 넘어온 시점의 스냅샷이라 화면 안에서 갱신할 수 없다.
+  // 방문 시간 제출 성공 후 실제 상태를 다시 반영하려면 이 로컬 상태를 바꿔야 한다
+  // (아래 _refreshJob 참고) — 그렇지 않으면 제출에 성공해도 상단 뱃지/진행
+  // 현황이 제출 전 상태로 화면이 열려있는 내내 그대로 남는다.
+  late TechnicianJob _job;
+
+  @override
+  void initState() {
+    super.initState();
+    _job = widget.job;
+  }
 
   Future<void> _submitVisitTime() async {
     final technicianId = context.read<AuthProvider>().currentUser?.id;
@@ -50,7 +62,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     setState(() => _isSubmittingSchedule = true);
     try {
       await RepairService.instance.createSchedule(
-        reportId: widget.job.id,
+        reportId: _job.id,
         technicianId: technicianId,
         scheduledAt: scheduledAt,
       );
@@ -59,6 +71,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const SnackBar(content: Text('방문 가능 시간을 제출했습니다.')),
         );
       }
+      await _refreshJob(technicianId);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
@@ -68,9 +81,23 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  /// 배정 목록을 다시 불러와 이 작업의 최신 상태로 _job을 교체한다. 실패해도
+  /// 방금 제출 자체는 이미 성공했으니 화면은 기존 _job으로 그대로 둔다 —
+  /// loadTechnicianJobs가 실패 시 돌려주는 mockTechnicianJobs의 id는 실제
+  /// UUID와 절대 겹치지 않으므로, 못 찾으면 조용히 넘어가도 안전하다.
+  Future<void> _refreshJob(String technicianId) async {
+    try {
+      final result = await loadTechnicianJobs(technicianId);
+      final updated = result.jobs.where((j) => j.id == _job.id);
+      if (mounted && updated.isNotEmpty) setState(() => _job = updated.first);
+    } catch (_) {
+      // 갱신 실패는 무시 — 위 주석 참고.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final job = widget.job;
+    final job = _job;
     final location = [job.address, job.unit].where((s) => s.isNotEmpty).join(' ');
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -90,7 +117,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                          child: Text('배정됨', style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                          child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
                         ),
                       ],
                     ),

@@ -25,6 +25,7 @@ class ReportVisitScheduleScreen extends StatefulWidget {
 class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
   Map<String, dynamic>? _schedule;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -35,11 +36,15 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
   Future<void> _load() async {
     try {
       final schedules = await RepairService.instance.getSchedules(reportId: widget.report.id);
+      // schedules가 빈 배열인 건 조회 성공 + "아직 일정이 없음"이라 정상 케이스다.
+      // 이 경우에만 아래 예시 값으로 대체한다. 조회 자체가 실패한 경우(아래 catch)는
+      // 다르게 다뤄야 한다 — 실패를 조용히 삼키고 예시 값을 "확정된 일정"인 것처럼
+      // 보여주면, 세입자가 실제로는 정해지지 않은 날짜에 집에서 기다리게 된다.
       if (mounted && schedules.isNotEmpty) setState(() => _schedule = schedules.first);
-    } on ApiException {
-      // 일정이 아직 없으면 아래 예시 값으로 대체한다.
-    } catch (_) {
-      // 위와 동일.
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = '일정 정보를 불러오지 못했습니다: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -68,7 +73,18 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
+                  : _errorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              _errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodyRegular14(color: AppColors.accentRed),
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

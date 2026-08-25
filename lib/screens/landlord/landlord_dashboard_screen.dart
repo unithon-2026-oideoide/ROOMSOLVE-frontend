@@ -140,7 +140,10 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                               _PendingRequestCard(
                                 title: formatRequestTitle(r),
                                 subtitle: formatRequestSubtitle(r).isNotEmpty ? formatRequestSubtitle(r) : '승인이 필요합니다.',
-                                onTap: () => context.push('/landlord/requests/${r['id']}'),
+                                // 상세 화면에서 승인하면 context.pop()으로 돌아오는데, 이 화면
+                                // State는 그대로 재사용되므로 승인 전 _requests가 남아있는다.
+                                // 돌아왔을 때 다시 불러와 "처리 대기 수리 요청" 카드가 갱신되게 한다.
+                                onTap: () => context.push('/landlord/requests/${r['id']}').then((_) => _load()),
                               ),
                               const SizedBox(height: 12),
                             ],

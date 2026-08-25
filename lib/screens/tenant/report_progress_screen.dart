@@ -82,7 +82,7 @@ class _ReportProgressScreenState extends State<ReportProgressScreen> {
       ),
       _TimelineStep(
         title: '수리기사 배정 및 방문 일정',
-        lines: [_currentStatus ?? report.status ?? '방문 일정을 조율 중입니다.'],
+        lines: [_currentStatus != null ? repairStatusLabel(_currentStatus) : '방문 일정을 조율 중입니다.'],
         state: _isCompleted
             ? _StepState.done
             : (_isVisitConfirmed ? _StepState.done : _StepState.current),

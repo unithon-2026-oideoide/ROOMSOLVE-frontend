@@ -78,6 +78,27 @@ Color requestStatusColor(String? status) {
   }
 }
 
+/// repair_status_timeline.status(scheduled/confirmed/in_progress/done) 영문
+/// 코드 ↔ 한글 명칭 매핑. requestStatusLabels(reports.status)와는 값의 종류가
+/// 다른 별개 축이다 — 섞어 쓰지 말 것.
+const Map<String, String> repairStatusLabels = {
+  'scheduled': '방문 일정 등록',
+  'confirmed': '방문 일정 확정',
+  'in_progress': '현장 수리 진행 중',
+  'done': '수리 완료',
+};
+
+/// GET /api/repair/timeline·schedule이 주는 영문 상태를 한글 라벨로 변환한다.
+/// report_detail_screen.dart와 report_progress_screen.dart가 공유해서 쓴다 —
+/// 예전에는 report_detail_screen.dart에만 이 변환기(_repairStatusLabel)가 있고
+/// report_progress_screen.dart는 없어서, 같은 신고를 두 화면에서 볼 때 한쪽은
+/// "현장 수리 진행 중", 다른 쪽은 원문 그대로 "in_progress"가 보이는 문제가 있었다.
+String repairStatusLabel(String? status) {
+  if (status == null || status.trim().isEmpty) return '진행 중';
+  final key = status.trim().toLowerCase();
+  return repairStatusLabels[key] ?? status;
+}
+
 /// ISO 날짜 문자열을 읽기 쉬운 한글 날짜/시간으로 포맷팅한다.
 String formatDateTime(String? isoString, {String fallback = '-'}) {
   if (isoString == null || isoString.trim().isEmpty) return fallback;

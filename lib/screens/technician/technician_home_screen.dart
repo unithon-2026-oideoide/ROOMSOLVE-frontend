@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/technician_job_loader.dart';
@@ -21,6 +22,8 @@ class TechnicianHomeScreen extends StatefulWidget {
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   List<TechnicianJob>? _jobs;
+  bool _isMock = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,8 +33,20 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
   Future<void> _load() async {
     final userId = context.read<AuthProvider>().currentUser?.id;
-    final jobs = await loadTechnicianJobs(userId);
-    if (mounted) setState(() => _jobs = jobs);
+    try {
+      final result = await loadTechnicianJobs(userId);
+      if (mounted) {
+        setState(() {
+          _jobs = result.jobs;
+          _isMock = result.isMock;
+          _errorMessage = null;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = '배정 작업을 불러오지 못했습니다: $e');
+    }
   }
 
   @override
@@ -39,6 +54,32 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     final user = context.watch<AuthProvider>().currentUser;
     final userName = user?.name ?? user?.email.split('@').first ?? '기사';
     final jobs = _jobs;
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyRegular14(color: AppColors.accentRed),
+                    ),
+                  ),
+                ),
+              ),
+              const AppBottomNav(current: AppBottomNavTab.home, homePath: '/technician', reportsPath: '/technician/jobs'),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (jobs == null) {
       return Scaffold(
@@ -91,6 +132,13 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       ),
                     ],
                   ),
+                  if (_isMock) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '아직 실제 배정이 없어 예시 데이터를 보여드립니다.',
+                      style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,

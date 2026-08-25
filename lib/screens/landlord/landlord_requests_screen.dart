@@ -53,6 +53,12 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
     }
   }
 
+  // 이 화면의 섹션 헤더(승인 대기/진행 중/완료)를 나누는 용도의 그룹핑이다.
+  // 개별 뱃지 문구/색은 category_helpers.dart의 requestStatusLabel/requestStatusColor를
+  // 따로 써서 request_detail_screen.dart와 정확히 같은 표시를 보장한다 — 예전에는
+  // 이 그룹명을 뱃지에도 그대로 썼는데, 그러면 rejected가 이 화면에서는 "완료"(회색)로,
+  // 상세 화면에서는 "거절됨"(빨강)으로 서로 다르게 보이는 문제가 있었다.
+  //
   // 백엔드 reports.status는 pending/approved/rejected 세 값만 준다
   // (landlord.controller.ts approveRequest 확인함). rejected는 더 이상 처리할
   // 게 없는 상태라 "완료" 그룹으로 묶는다.
@@ -61,17 +67,6 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
     if (status == 'rejected' || status.contains('완료') || status == 'completed' || status == 'done') return '완료';
     if (status.contains('진행') || status == 'in_progress' || status == 'approved') return '진행 중';
     return '승인 대기';
-  }
-
-  Color _statusColor(String group) {
-    switch (group) {
-      case '승인 대기':
-        return AppColors.accentGreen;
-      case '진행 중':
-        return AppColors.brandMain;
-      default:
-        return AppColors.gray5;
-    }
   }
 
   @override
@@ -126,9 +121,9 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                                     _RequestRow(
                                       title: formatRequestTitle(r),
                                       subtitle: formatRequestSubtitle(r),
-                                      badgeText: group,
-                                      badgeColor: _statusColor(group),
-                                      onTap: () => context.push('/landlord/requests/${r['id']}'),
+                                      badgeText: requestStatusLabel(r['status']?.toString()),
+                                      badgeColor: requestStatusColor(r['status']?.toString()),
+                                      onTap: () => context.push('/landlord/requests/${r['id']}').then((_) => _load()),
                                     ),
                                     const SizedBox(height: 8),
                                   ],
