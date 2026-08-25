@@ -1,22 +1,86 @@
 import 'package:flutter/material.dart';
 
+import '../../core/api_client.dart';
 import '../../models/report.dart';
+import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "신고 내역 상세 화면". Report 모델에 없는 위치/긴급도/비용 부담 등 일부
-/// 필드는 데이터가 있으면 쓰고, 없으면 안내 텍스트로 대체한다.
-class ReportDetailScreen extends StatelessWidget {
+String _repairStatusLabel(String status) {
+  switch (status) {
+    case 'scheduled':
+      return '방문 일정 등록';
+    case 'confirmed':
+      return '방문 일정 확정';
+    case 'in_progress':
+      return '현장 수리 진행 중';
+    case 'done':
+      return '수리 완료';
+    default:
+      return status;
+  }
+}
+
+String _formatDateTime(String isoString) {
+  final dt = DateTime.tryParse(isoString);
+  if (dt == null) return isoString;
+  final local = dt.toLocal();
+  return '${local.year}년 ${local.month}월 ${local.day}일 ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+/// "신고 내역 상세 화면". 진행 타임라인의 뒷부분(방문 일정~수리 완료)은
+/// GET /api/repair/timeline로 실제 이력을 가져와 표시한다. Report 모델에
+/// 없는 위치/긴급도/비용 부담 등 일부 필드는 데이터가 있으면 쓰고, 없으면
+/// 안내 텍스트로 대체한다.
+class ReportDetailScreen extends StatefulWidget {
   const ReportDetailScreen({super.key, required this.report});
 
   final Report report;
 
-  bool get _isCompleted => report.status == 'completed' || report.status == 'done' || report.status == '완료';
+  @override
+  State<ReportDetailScreen> createState() => _ReportDetailScreenState();
+}
+
+class _ReportDetailScreenState extends State<ReportDetailScreen> {
+  List<Map<String, dynamic>>? _timeline;
+  String? _currentStatus;
+  bool _isLoadingTimeline = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTimeline();
+  }
+
+  Future<void> _loadTimeline() async {
+    try {
+      final result = await RepairService.instance.getTimeline(widget.report.id);
+      if (mounted) {
+        setState(() {
+          _timeline = result.timeline;
+          _currentStatus = result.currentStatus;
+        });
+      }
+    } on ApiException {
+      // 이력이 없으면(400/404 등) 아래 정적 안내로 대체한다.
+    } catch (_) {
+      // 위와 동일.
+    } finally {
+      if (mounted) setState(() => _isLoadingTimeline = false);
+    }
+  }
+
+  bool get _isCompleted {
+    final status = _currentStatus ?? widget.report.status;
+    return status == 'completed' || status == 'done' || status == '완료';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final report = widget.report;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -41,7 +105,7 @@ class ReportDetailScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
                           child: Text(
-                            _isCompleted ? '완료' : (report.status ?? '처리 중'),
+                            _isCompleted ? '완료' : (_currentStatus ?? report.status ?? '처리 중'),
                             style: AppTextStyles.bodyRegular12(color: AppColors.white),
                           ),
                         ),
@@ -84,9 +148,9 @@ class ReportDetailScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text('진행 타임라인', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
                     const SizedBox(height: 8),
-                    _TimelineCard(title: '신고 접수', done: true, subtitle: '사진 및 상황 설명 제출 완료'),
+                    const _TimelineCard(title: '신고 접수', done: true, subtitle: '사진 및 상황 설명 제출 완료'),
                     const SizedBox(height: 12),
-                    _TimelineCard(title: 'AI 판단 완료', done: true, subtitle: '원인 분석 및 긴급도 산정 완료'),
+                    const _TimelineCard(title: 'AI 판단 완료', done: true, subtitle: '원인 분석 및 긴급도 산정 완료'),
                     const SizedBox(height: 12),
                     _TimelineCard(
                       title: '임대인 승인',
@@ -94,12 +158,27 @@ class ReportDetailScreen extends StatelessWidget {
                       subtitle: '수리 진행 승인 및 수리기사 배정 요청',
                     ),
                     const SizedBox(height: 12),
-                    _TimelineCard(
-                      title: '수리 완료 확인',
-                      done: _isCompleted,
-                      current: !_isCompleted,
-                      subtitle: _isCompleted ? '수리가 완료되었습니다.' : '일정 확정 후 진행',
-                    ),
+                    if (_isLoadingTimeline)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_timeline != null && _timeline!.isNotEmpty)
+                      for (int i = 0; i < _timeline!.length; i++) ...[
+                        _TimelineCard(
+                          title: _repairStatusLabel(_timeline![i]['status']?.toString() ?? ''),
+                          done: true,
+                          subtitle: _formatDateTime(_timeline![i]['changed_at']?.toString() ?? ''),
+                        ),
+                        const SizedBox(height: 12),
+                      ]
+                    else
+                      _TimelineCard(
+                        title: '수리 완료 확인',
+                        done: _isCompleted,
+                        current: !_isCompleted,
+                        subtitle: _isCompleted ? '수리가 완료되었습니다.' : '일정 확정 후 진행',
+                      ),
                     if (report.photoUrls.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text('신고 사진', style: AppTextStyles.subtitleBold18(color: AppColors.black)),

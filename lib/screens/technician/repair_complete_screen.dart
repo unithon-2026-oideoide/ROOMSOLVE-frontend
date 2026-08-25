@@ -1,21 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
+import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "수리 완료 확인 화면". 실제 완료 처리/전송 API가 없어 확인 및 전송 버튼은
-/// 로컬 안내(SnackBar)만 표시한다.
-class RepairCompleteScreen extends StatelessWidget {
+/// "수리 완료 확인 화면". "확인 및 전송"이 POST /api/repair/status로
+/// {report_id: job.id, status: 'done'}을 실제로 기록한다.
+class RepairCompleteScreen extends StatefulWidget {
   const RepairCompleteScreen({super.key, required this.job});
 
   final TechnicianJob job;
 
   @override
+  State<RepairCompleteScreen> createState() => _RepairCompleteScreenState();
+}
+
+class _RepairCompleteScreenState extends State<RepairCompleteScreen> {
+  bool _isSubmitting = false;
+
+  Future<void> _confirmAndSend() async {
+    setState(() => _isSubmitting = true);
+    try {
+      await RepairService.instance.postStatus(reportId: widget.job.id, status: 'done');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('세입자에게 완료 알림을 전송했습니다.')),
+        );
+        context.go('/technician/jobs');
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('전송 중 오류가 발생했습니다: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final job = widget.job;
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -74,7 +103,7 @@ class RepairCompleteScreen extends StatelessWidget {
                           Text('작업이 완료되었습니다', style: AppTextStyles.bodyRegular16(color: AppColors.gray8)),
                           const SizedBox(height: 12),
                           Text(
-                            '${job.tenantName}님의 ${job.title} 작업을 완료했습니다.',
+                            '${job.tenantName.isNotEmpty ? '${job.tenantName}님의 ' : ''}${job.title} 작업을 완료했습니다.',
                             style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
                           ),
                           const SizedBox(height: 4),
@@ -132,18 +161,19 @@ class RepairCompleteScreen extends StatelessWidget {
                     SizedBox(
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('세입자에게 완료 알림을 전송했습니다.')),
-                          );
-                          context.go('/technician/jobs');
-                        },
+                        onPressed: _isSubmitting ? null : _confirmAndSend,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandLight,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
-                        child: Text('확인 및 전송', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                              )
+                            : Text('확인 및 전송', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
                       ),
                     ),
                     const SizedBox(height: 12),

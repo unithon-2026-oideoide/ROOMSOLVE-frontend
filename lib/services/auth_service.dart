@@ -44,6 +44,9 @@ class AuthService {
     final data = response.data as Map<String, dynamic>;
     final user = AppUser.fromJson(data['user'] ?? data);
     await AuthStorage.instance.saveRole(userRoleToString(user.role));
+    await AuthStorage.instance.saveUserId(user.id);
+    await AuthStorage.instance.saveName(user.name);
+    await AuthStorage.instance.savePhone(user.phone);
     return user;
   }
 
@@ -52,12 +55,17 @@ class AuthService {
   }
 
   Future<AppUser> _handleAuthResponse(Map<String, dynamic> data) async {
-    final token = data['access_token'] ?? data['accessToken'];
+    // access_token은 session 아래에 있다 (POST /api/auth/login,signup 응답: {user, session}).
+    final session = data['session'] as Map<String, dynamic>?;
+    final token = session?['access_token'] ?? data['access_token'] ?? data['accessToken'];
     if (token != null) {
       await AuthStorage.instance.saveAccessToken(token.toString());
     }
     final user = AppUser.fromJson(data['user'] ?? data);
     await AuthStorage.instance.saveRole(userRoleToString(user.role));
+    await AuthStorage.instance.saveUserId(user.id);
+    await AuthStorage.instance.saveName(user.name);
+    await AuthStorage.instance.savePhone(user.phone);
     return user;
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../core/role_routes.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
@@ -12,13 +13,20 @@ import '../../widgets/app_top_bar.dart';
 
 const _roleOptions = [UserRole.tenant, UserRole.landlord, UserRole.technician];
 
-/// "사용자 유형 변경 화면". 유형 변경 전용 백엔드 API가 없어
-/// AuthProvider.updateRole로 로컬 상태만 갱신한다.
-class RoleChangeScreen extends StatelessWidget {
+/// "사용자 유형 변경 화면". PATCH /api/users/{id}/role를 호출해 서버에 반영한다
+/// (AuthProvider.updateRole 경유).
+class RoleChangeScreen extends StatefulWidget {
   const RoleChangeScreen({super.key});
 
-  Future<void> _requestChange(BuildContext context) async {
-    final auth = context.read<AuthProvider>();
+  @override
+  State<RoleChangeScreen> createState() => _RoleChangeScreenState();
+}
+
+class _RoleChangeScreenState extends State<RoleChangeScreen> {
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  Future<void> _requestChange() async {
     final selected = await showModalBottomSheet<UserRole>(
       context: context,
       builder: (context) => SafeArea(
@@ -33,9 +41,22 @@ class RoleChangeScreen extends StatelessWidget {
         ),
       ),
     );
-    if (selected == null || !context.mounted) return;
-    auth.updateRole(selected);
-    context.go(homePathForRole(selected));
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    try {
+      await context.read<AuthProvider>().updateRole(selected);
+      if (mounted) context.go(homePathForRole(selected));
+    } on ApiException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (e) {
+      setState(() => _errorMessage = '유형 변경 중 오류가 발생했습니다: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -78,17 +99,27 @@ class RoleChangeScreen extends StatelessWidget {
                       '유형을 변경하면 서비스 이용 범위와 시작 화면이 달라집니다. 변경 요청을 제출하면 유형 선택 화면으로 이동합니다.',
                       style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
                     ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
+                    ],
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: () => _requestChange(context),
+                        onPressed: _isSubmitting ? null : _requestChange,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandLight,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
-                        child: Text('유형 변경 요청', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                              )
+                            : Text('유형 변경 요청', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
                       ),
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/api_client.dart';
 import '../core/auth_storage.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -23,9 +24,14 @@ class AuthProvider extends ChangeNotifier {
       final token = await AuthStorage.instance.readAccessToken();
       final roleString = await AuthStorage.instance.readRole();
       if (token != null && token.isNotEmpty) {
+        final id = await AuthStorage.instance.readUserId();
+        final name = await AuthStorage.instance.readName();
+        final phone = await AuthStorage.instance.readPhone();
         _currentUser = AppUser(
-          id: '',
+          id: id ?? '',
           email: '',
+          name: name,
+          phone: phone,
           role: userRoleFromString(roleString),
         );
       }
@@ -52,12 +58,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 사용자 유형 변경 화면에서 호출된다. 유형 변경 전용 백엔드 API가 아직
-  /// 없어 로컬 상태만 갱신한다. TODO: 서버에 유형 변경을 반영하는 API가
-  /// 추가되면 여기서 호출해야 한다.
-  void updateRole(UserRole role) {
-    if (_currentUser == null) return;
-    _currentUser = _currentUser!.copyWith(role: role);
+  /// 사용자 유형 변경 화면에서 호출된다. PATCH /api/users/{id}/role를 호출해
+  /// 서버에 반영한 뒤 로컬 상태를 갱신한다.
+  Future<void> updateRole(UserRole role) async {
+    final current = _currentUser;
+    if (current == null || current.id.isEmpty) {
+      throw ApiException('사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.');
+    }
+    final user = await AuthService.instance.updateRole(userId: current.id, role: role);
+    _currentUser = user;
     notifyListeners();
   }
 

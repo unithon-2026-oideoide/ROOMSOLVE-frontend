@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/technician_job.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/technician_job_loader.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "배정 작업 목록 화면". 실제 배정 작업 API가 없어 [mockTechnicianJobs]를 사용한다.
+/// "배정 작업 목록 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
+/// 일정을 가져온다. 배정된 일정이 없으면 [mockTechnicianJobs]로 대체한다.
 class TechnicianJobListScreen extends StatefulWidget {
   const TechnicianJobListScreen({super.key});
 
@@ -17,6 +21,7 @@ class TechnicianJobListScreen extends StatefulWidget {
 
 class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
   String _filter = '전체';
+  List<TechnicianJob>? _allJobs;
 
   static const _filters = ['전체', '방문 예정', '진행 중', '완료'];
 
@@ -28,8 +33,35 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    final jobs = await loadTechnicianJobs(userId);
+    if (mounted) setState(() => _allJobs = jobs);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final jobs = mockTechnicianJobs.where((j) => _filter == '전체' || j.statusLabel == _filter).toList();
+    final allJobs = _allJobs;
+    if (allJobs == null) {
+      return Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(),
+              const Expanded(child: Center(child: CircularProgressIndicator())),
+              const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/technician', reportsPath: '/technician/jobs'),
+            ],
+          ),
+        ),
+      );
+    }
+    final jobs = allJobs.where((j) => _filter == '전체' || j.statusLabel == _filter).toList();
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -132,8 +164,13 @@ class _JobRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(job.title, style: AppTextStyles.bodyRegular16(color: AppColors.gray8)),
-                      const SizedBox(height: 4),
-                      Text('${job.unit} · ${job.tenantName}', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
+                      if (job.unit.isNotEmpty || job.tenantName.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          [job.unit, job.tenantName].where((s) => s.isNotEmpty).join(' · '),
+                          style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -144,8 +181,10 @@ class _JobRow extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(job.address, style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
+            if (job.address.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(job.address, style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
+            ],
             const SizedBox(height: 4),
             Row(
               children: [

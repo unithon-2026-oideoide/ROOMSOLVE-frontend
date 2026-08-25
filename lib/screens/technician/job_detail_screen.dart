@@ -1,20 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../models/technician_job.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "작업 상세 화면". 실제 배정 작업 API가 없어 [TechnicianJob] 목업을 그대로 사용한다.
-class JobDetailScreen extends StatelessWidget {
+/// "작업 상세 화면". job이 실제 배정 데이터(스케줄+리포트 조합)면 "방문 가능
+/// 시간 제출"이 POST /api/repair/schedule을 실제로 호출한다. 위치/연락처/작업
+/// 지시는 백엔드에 대응 필드가 없어 정보 없음으로 표시될 수 있다.
+class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
 
   final TechnicianJob job;
 
   @override
+  State<JobDetailScreen> createState() => _JobDetailScreenState();
+}
+
+class _JobDetailScreenState extends State<JobDetailScreen> {
+  bool _isSubmittingSchedule = false;
+
+  Future<void> _submitVisitTime() async {
+    final technicianId = context.read<AuthProvider>().currentUser?.id;
+    if (technicianId == null || technicianId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.')),
+      );
+      return;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (time == null || !mounted) return;
+
+    final scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+    setState(() => _isSubmittingSchedule = true);
+    try {
+      await RepairService.instance.createSchedule(
+        reportId: widget.job.id,
+        technicianId: technicianId,
+        scheduledAt: scheduledAt,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('방문 가능 시간을 제출했습니다.')),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('제출 중 오류가 발생했습니다: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmittingSchedule = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final job = widget.job;
+    final location = [job.address, job.unit].where((s) => s.isNotEmpty).join(' ');
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -45,7 +102,7 @@ class JobDetailScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           _Row('고장 유형', job.title),
-                          _Row('위치', '${job.address} ${job.unit}'),
+                          _Row('위치', location.isNotEmpty ? location : '정보 없음'),
                           _Row('방문 요청 시간', job.visitTime),
                           _Row('연락처', job.contactPhone),
                         ],
@@ -103,17 +160,19 @@ class JobDetailScreen extends StatelessWidget {
                     SizedBox(
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('방문 가능 시간 제출 기능은 준비 중입니다.')),
-                          );
-                        },
+                        onPressed: _isSubmittingSchedule ? null : _submitVisitTime,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandLight,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
-                        child: Text('방문 가능 시간 제출', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
+                        child: _isSubmittingSchedule
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                              )
+                            : Text('방문 가능 시간 제출', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
                       ),
                     ),
                     const SizedBox(height: 12),

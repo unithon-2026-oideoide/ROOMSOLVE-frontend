@@ -1,6 +1,8 @@
-/// 수리기사 화면은 아직 백엔드 연동 전 단계(스켈레톤)라서, 화면을 채워 보여줄
-/// 로컬 목업 데이터만 정의한다. TODO: technician_service.dart + 실제 작업 배정
-/// API가 추가되면 이 목업 대신 서버 데이터를 사용하도록 교체해야 한다.
+/// GET /api/repair/schedule(technicianId=)와 GET /api/reports/{id}를 조합해
+/// 화면에 필요한 형태로 만든다. 백엔드 Report/RepairSchedule에는 위치, 세입자
+/// 연락처, 작업 지시 같은 필드가 없어 해당 항목은 빈 값으로 둔다(화면에서
+/// "정보 없음"으로 표시). 실제 배정 일정이 하나도 없을 때만 [mockTechnicianJobs]로
+/// 대체해 화면이 비어 보이지 않게 한다.
 enum TechnicianJobStatus { scheduled, inProgress, onHold, completed }
 
 class TechnicianJob {
@@ -19,6 +21,7 @@ class TechnicianJob {
     required this.receivedAt,
     this.estimatedCost,
     this.actualCost,
+    this.scheduleId,
   });
 
   final String id;
@@ -35,6 +38,8 @@ class TechnicianJob {
   final String receivedAt;
   final String? estimatedCost;
   final String? actualCost;
+  /// 실제 RepairSchedule 항목의 id (PATCH .../confirm에 필요). 목업 데이터는 null.
+  final String? scheduleId;
 
   String get statusLabel {
     switch (status) {
@@ -47,6 +52,65 @@ class TechnicianJob {
       case TechnicianJobStatus.completed:
         return '완료';
     }
+  }
+
+  static String _severityToPriority(String? severity) {
+    switch (severity) {
+      case 'emergency':
+        return '긴급';
+      case 'high':
+        return '높음';
+      case 'medium':
+        return '보통';
+      case 'low':
+        return '낮음';
+      default:
+        return '일반';
+    }
+  }
+
+  static TechnicianJobStatus _resolveStatus({required bool confirmed, required String? reportStatus}) {
+    if (reportStatus == 'done' || reportStatus == 'completed' || reportStatus == '완료') {
+      return TechnicianJobStatus.completed;
+    }
+    return confirmed ? TechnicianJobStatus.inProgress : TechnicianJobStatus.scheduled;
+  }
+
+  static String _formatVisitTime(String? isoString) {
+    if (isoString == null) return '일정 미정';
+    final dt = DateTime.tryParse(isoString)?.toLocal();
+    if (dt == null) return '일정 미정';
+    final period = dt.hour < 12 ? '오전' : '오후';
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    return '$period $hour12:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  static String _formatReceivedAt(String? isoString) {
+    final dt = isoString != null ? DateTime.tryParse(isoString)?.toLocal() : null;
+    if (dt == null) return '날짜 미상';
+    return '${dt.year}년 ${dt.month}월 ${dt.day}일';
+  }
+
+  factory TechnicianJob.fromApi({
+    required Map<String, dynamic> schedule,
+    required Map<String, dynamic> report,
+  }) {
+    final confirmed = schedule['confirmed'] == true;
+    return TechnicianJob(
+      id: report['id']?.toString() ?? '',
+      title: report['category']?.toString() ?? report['description']?.toString() ?? '수리 요청',
+      unit: '',
+      tenantName: '',
+      address: '',
+      visitTime: _formatVisitTime(schedule['scheduled_at']?.toString()),
+      priority: _severityToPriority(report['severity']?.toString()),
+      status: _resolveStatus(confirmed: confirmed, reportStatus: report['status']?.toString()),
+      symptomDescription: report['description']?.toString() ?? '증상 설명이 없습니다.',
+      instruction: '작업 지시 정보가 아직 제공되지 않습니다.',
+      contactPhone: '연락처 정보 없음',
+      receivedAt: _formatReceivedAt(report['created_at']?.toString()),
+      scheduleId: schedule['id']?.toString(),
+    );
   }
 }
 

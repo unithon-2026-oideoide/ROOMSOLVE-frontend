@@ -4,10 +4,24 @@ import '../../core/api_client.dart';
 import '../../models/report.dart';
 import '../../models/vendor.dart';
 import '../../services/report_service.dart';
+import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_top_bar.dart';
 import '../../widgets/app_bottom_nav.dart';
+
+String? _recommendedPathToApiString(RecommendedPath path) {
+  switch (path) {
+    case RecommendedPath.selfFix:
+      return 'self_fix';
+    case RecommendedPath.manufacturerAs:
+      return 'manufacturer_as';
+    case RecommendedPath.vendorMatch:
+      return 'vendor_match';
+    case RecommendedPath.unknown:
+      return null;
+  }
+}
 
 /// AI 분석 결과의 recommended_path에 따라 다른 화면을 보여준다.
 /// self_fix / manufacturer_as / vendor_match 세 갈래로 분기한다.
@@ -54,8 +68,10 @@ class _ChatMessage {
   final bool isUser;
 }
 
-/// "세입자 - 자가조치가이드" 화면: AI 답변을 채팅 형태로 보여준다.
-/// 실시간 채팅 응답 API가 아직 없어 사용자가 보낸 메시지는 화면에만 표시된다.
+/// "세입자 - 자가조치가이드" 화면: POST /api/reports/chat으로 실제 AI 챗봇과
+/// 대화한다. context(category/severity/recommended_path/self_fix_guide)는
+/// report에서 채우고, 대화 기록은 이 화면(클라이언트)이 들고 있다가 매 요청에
+/// 함께 보낸다(API가 무상태이기 때문).
 class _SelfFixView extends StatefulWidget {
   final Report report;
   const _SelfFixView({required this.report});
@@ -66,20 +82,33 @@ class _SelfFixView extends StatefulWidget {
 
 class _SelfFixViewState extends State<_SelfFixView> {
   final _inputController = TextEditingController();
-  late final List<_ChatMessage> _messages;
+  final List<_ChatMessage> _messages = [];
+  final List<Map<String, String>> _apiMessages = [];
+  bool _isSending = false;
+  String? _errorMessage;
+  Map<String, dynamic>? _context;
 
   @override
   void initState() {
     super.initState();
-    _messages = [
-      if ((widget.report.description ?? '').isNotEmpty)
-        _ChatMessage(text: widget.report.description!, isUser: true),
-      _ChatMessage(
-        text: widget.report.selfFixGuide ??
-            '셀프 수리 가이드를 준비 중입니다. 잠시 후 다시 확인해 주세요.',
+    final category = widget.report.category;
+    final severity = widget.report.severity;
+    if (category != null && severity != null) {
+      _context = {
+        'category': category,
+        'severity': severity,
+        if (_recommendedPathToApiString(widget.report.recommendedPath) != null)
+          'recommended_path': _recommendedPathToApiString(widget.report.recommendedPath),
+        if (widget.report.selfFixGuide != null) 'self_fix_guide': widget.report.selfFixGuide,
+      };
+      _sendToApi(); // 첫 턴: messages를 빈 배열로 보내면 챗봇이 가이드를 먼저 제시한다.
+    } else {
+      // AI 분석 결과(category/severity)가 없으면 챗봇을 호출할 수 없어 기존 가이드 텍스트로 대체한다.
+      _messages.add(_ChatMessage(
+        text: widget.report.selfFixGuide ?? '셀프 수리 가이드를 준비 중입니다. 잠시 후 다시 확인해 주세요.',
         isUser: false,
-      ),
-    ];
+      ));
+    }
   }
 
   @override
@@ -88,16 +117,39 @@ class _SelfFixViewState extends State<_SelfFixView> {
     super.dispose();
   }
 
+  Future<void> _sendToApi() async {
+    setState(() {
+      _isSending = true;
+      _errorMessage = null;
+    });
+    try {
+      final result = await RepairService.instance.chat(context: _context!, messages: _apiMessages);
+      _apiMessages.add({'role': 'assistant', 'content': result.reply});
+      setState(() {
+        _messages.add(_ChatMessage(text: result.reply, isUser: false));
+        if (result.escalate) {
+          final target = result.escalateTo == 'manufacturer_as' ? '제조사 A/S' : '전문 업체 매칭';
+          _messages.add(_ChatMessage(text: '자가수리로 해결이 어려워 보여요. $target 단계로 안내해 드릴게요.', isUser: false));
+        }
+      });
+    } on ApiException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (e) {
+      setState(() => _errorMessage = 'AI 상담 중 오류가 발생했습니다: $e');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
   void _send() {
     final text = _inputController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending || _context == null) return;
     setState(() {
       _messages.add(_ChatMessage(text: text, isUser: true));
       _inputController.clear();
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('실시간 채팅 상담 기능은 준비 중입니다.')),
-    );
+    _apiMessages.add({'role': 'user', 'content': text});
+    _sendToApi();
   }
 
   @override
@@ -120,6 +172,13 @@ class _SelfFixViewState extends State<_SelfFixView> {
               child: ListView(
                 children: [
                   for (final m in _messages) _ChatBubble(message: m),
+                  if (_isSending)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text('AI가 답변을 준비하고 있어요...', style: AppTextStyles.captionRegular10(color: AppColors.gray6)),
+                    ),
+                  if (_errorMessage != null)
+                    Text(_errorMessage!, style: AppTextStyles.captionRegular10(color: AppColors.accentRed)),
                 ],
               ),
             ),
@@ -139,6 +198,7 @@ class _SelfFixViewState extends State<_SelfFixView> {
                 Expanded(
                   child: TextField(
                     controller: _inputController,
+                    enabled: _context != null && !_isSending,
                     onSubmitted: (_) => _send(),
                     style: AppTextStyles.captionRegular10(color: AppColors.gray8),
                     decoration: InputDecoration(
@@ -151,7 +211,7 @@ class _SelfFixViewState extends State<_SelfFixView> {
                 ),
                 IconButton(
                   icon: Icon(Icons.send, size: 20, color: AppColors.brandMain),
-                  onPressed: _send,
+                  onPressed: (_context != null && !_isSending) ? _send : null,
                 ),
               ],
             ),

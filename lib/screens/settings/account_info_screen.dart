@@ -35,11 +35,16 @@ class AccountInfoScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _Field(label: '사용자 유형', value: roleLabel(auth.role)),
                     const SizedBox(height: 20),
-                    _Field(label: '이메일', value: user?.email ?? 'user@example.com'),
+                    _Field(label: '이메일', value: user?.email.isNotEmpty == true ? user!.email : 'user@example.com'),
                     const SizedBox(height: 20),
-                    _Field(label: '전화번호', value: '010-1234-5678'),
+                    _Field(label: '전화번호', value: user?.phone ?? '등록된 전화번호가 없습니다'),
                     const SizedBox(height: 20),
-                    _Field(label: '서비스 가입일', value: '2025년 1월 15일'),
+                    _Field(
+                      label: '서비스 가입일',
+                      value: user?.createdAt != null
+                          ? '${user!.createdAt!.year}년 ${user.createdAt!.month}월 ${user.createdAt!.day}일'
+                          : '정보 없음',
+                    ),
                     const SizedBox(height: 20),
                     GestureDetector(
                       onTap: () => context.pop(),
