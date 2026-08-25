@@ -47,6 +47,7 @@ class ReportService {
     String? severity,
     String? recommendedPath,
     String? selfFixGuide,
+    String? aiSummary,
     String? applianceType,
     String? availableTimes,
   }) async {
@@ -59,6 +60,7 @@ class ReportService {
       'severity': ?severity,
       'recommended_path': ?recommendedPath,
       'self_fix_guide': ?selfFixGuide,
+      'ai_summary': ?aiSummary,
       'appliance_type': ?applianceType,
       'available_times': ?availableTimes,
     });
@@ -103,6 +105,7 @@ class ReportService {
       severity: analysis['severity']?.toString(),
       recommendedPath: analysis['recommended_path']?.toString(),
       selfFixGuide: analysis['self_fix_guide']?.toString(),
+      aiSummary: analysis['ai_summary']?.toString(),
       applianceType: analysis['appliance_type']?.toString(),
       availableTimes: availableTimes,
     );

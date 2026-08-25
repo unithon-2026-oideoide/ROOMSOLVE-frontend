@@ -505,7 +505,7 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
                 Text('AI 판단 요약', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
                 const SizedBox(height: 8),
                 Text(
-                  widget.report.description ?? '전문 수리기사 방문이 필요한 것으로 판단됩니다.',
+                  widget.report.aiSummary ?? '전문 수리기사 방문이 필요한 것으로 판단됩니다.',
                   style: AppTextStyles.bodyRegular12(color: AppColors.gray8),
                 ),
               ],

@@ -201,7 +201,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            report.selfFixGuide ?? report.description ?? 'AI 판단 정보가 없습니다.',
+                            report.aiSummary ?? report.selfFixGuide ?? 'AI 판단 정보가 없습니다.',
                             style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
                           ),
                           const SizedBox(height: 8),
