@@ -147,6 +147,17 @@ String formatRequestSubtitle(Map<String, dynamic> request) {
   return '';
 }
 
+/// report_service.dart(submitReport)가 가전 하자 부담 주체 판정 결과를
+/// description 끝에 심어둔 "[가전 하자 판정] 비용 부담: ..." 줄에서 그 값만
+/// 뽑아온다. reports 테이블에 판정 결과를 담을 별도 컬럼이 없어 description에
+/// 함께 저장해두고 여기서 다시 읽는 방식이다 — 가전이 아닌 하자는 이 태그
+/// 자체가 없으므로 null을 돌려준다.
+String? applianceLiabilityFromDescription(String? description) {
+  if (description == null) return null;
+  final match = RegExp(r'\[가전 하자 판정\] 비용 부담:\s*(.+)').firstMatch(description);
+  return match?.group(1)?.trim();
+}
+
 /// Report 모델용 타이틀 생성 헬퍼
 String formatReportTitle(String? category, String? description, {String fallback = '수리 요청'}) {
   if (category != null && category.trim().isNotEmpty) {

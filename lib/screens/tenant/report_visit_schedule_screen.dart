@@ -55,14 +55,11 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
     final report = widget.report;
     final scheduledAt = _schedule?['scheduled_at'] != null ? DateTime.tryParse(_schedule!['scheduled_at'].toString())?.toLocal() : null;
     final technician = _schedule?['technician'] as Map<String, dynamic>?;
-
-    final dateLabel = scheduledAt != null
-        ? '${scheduledAt.year}년 ${scheduledAt.month}월 ${scheduledAt.day}일'
-        : '2025년 8월 14일 (목)';
-    final timeLabel = scheduledAt != null
-        ? '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}'
-        : '오전 10:00 – 12:00';
-    final technicianLabel = technician?['name']?.toString() ?? '든든배관';
+    // 조회는 성공했지만 아직 일정이 없는(스케줄이 하나도 없거나 확정 시각이
+    // 없는) 정상 케이스다. 예전에는 이 경우에도 "2025년 8월 14일" 같은 디자인
+    // 예시 값을 실제 확정 일정인 것처럼 보여줘서, 세입자가 실제로는 정해지지
+    // 않은 날짜에 집에서 기다리게 될 수 있었다.
+    final hasSchedule = scheduledAt != null;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -84,7 +81,29 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
                             ),
                           ),
                         )
-                      : SingleChildScrollView(
+                      : !hasSchedule
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '아직 방문 일정이 확정되지 않았습니다',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.subtitleBold22(color: AppColors.black),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '업체가 방문 가능 시간을 제안하고 임대인이 견적을 선택하면 이 화면에 일정이 표시됩니다.',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -109,10 +128,20 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
                               children: [
                                 Text('확정된 방문 일정', style: AppTextStyles.subtitleSemiBold16(color: AppColors.gray8)),
                                 const SizedBox(height: 12),
-                                _InfoRow(label: '날짜', value: dateLabel),
-                                _InfoRow(label: '시간', value: timeLabel),
-                                _InfoRow(label: '담당 기사', value: technicianLabel),
-                                _InfoRow(label: '작업 내용', value: report.category != null ? '${categoryLabel(report.category)} 점검 및 수리' : '화장실 누수 점검 및 수리'),
+                                _InfoRow(
+                                  label: '날짜',
+                                  value: '${scheduledAt.year}년 ${scheduledAt.month}월 ${scheduledAt.day}일',
+                                ),
+                                _InfoRow(
+                                  label: '시간',
+                                  value:
+                                      '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}',
+                                ),
+                                _InfoRow(label: '담당 기사', value: technician?['name']?.toString() ?? '배정 예정'),
+                                _InfoRow(
+                                  label: '작업 내용',
+                                  value: report.category != null ? '${categoryLabel(report.category)} 점검 및 수리' : '점검 및 수리',
+                                ),
                               ],
                             ),
                           ),

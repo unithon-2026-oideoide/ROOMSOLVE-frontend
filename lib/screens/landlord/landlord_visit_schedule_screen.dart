@@ -51,14 +51,10 @@ class _LandlordVisitScheduleScreenState extends State<LandlordVisitScheduleScree
   Widget build(BuildContext context) {
     final scheduledAt = _schedule?['scheduled_at'] != null ? DateTime.tryParse(_schedule!['scheduled_at'].toString())?.toLocal() : null;
     final technician = _schedule?['technician'] as Map<String, dynamic>?;
-
-    final dateLabel = scheduledAt != null
-        ? '${scheduledAt.year}년 ${scheduledAt.month}월 ${scheduledAt.day}일'
-        : '2025년 8월 14일 (목)';
-    final timeLabel = scheduledAt != null
-        ? '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}'
-        : '오전 10:00 – 12:00';
-    final technicianLabel = technician?['name']?.toString() ?? '든든배관';
+    // 조회는 성공했지만 아직 일정이 없는 정상 케이스에도 디자인 예시 값을
+    // "확정된 일정"처럼 보여주면 안 된다 — report_visit_schedule_screen.dart와
+    // 동일한 이유.
+    final hasSchedule = scheduledAt != null;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -80,7 +76,29 @@ class _LandlordVisitScheduleScreenState extends State<LandlordVisitScheduleScree
                             ),
                           ),
                         )
-                      : SingleChildScrollView(
+                      : !hasSchedule
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '아직 방문 일정이 확정되지 않았습니다',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.subtitleBold22(color: AppColors.black),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '견적을 선택하면 업체가 제안한 시간으로 방문 일정이 자동으로 잡힙니다.',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,10 +122,13 @@ class _LandlordVisitScheduleScreenState extends State<LandlordVisitScheduleScree
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('확정된 방문 일정', style: AppTextStyles.subtitleSemiBold16(color: AppColors.gray8)),
-                                _Row('날짜', dateLabel),
-                                _Row('시간', timeLabel),
-                                _Row('담당 기사', technicianLabel),
-                                const _Row('작업 내용', '화장실 누수 점검 및 수리'),
+                                _Row('날짜', '${scheduledAt.year}년 ${scheduledAt.month}월 ${scheduledAt.day}일'),
+                                _Row(
+                                  '시간',
+                                  '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}',
+                                ),
+                                _Row('담당 기사', technician?['name']?.toString() ?? '배정 예정'),
+                                const _Row('작업 내용', '점검 및 수리'),
                               ],
                             ),
                           ),
