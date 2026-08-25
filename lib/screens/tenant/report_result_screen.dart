@@ -278,32 +278,79 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
 
   Future<void> _load() async {
     try {
-      final result = await ReportService.instance.getManufacturerAs(category: widget.report.category ?? '');
-      setState(() {
-        _asInfo = result;
-        _isLoading = false;
-      });
+      final result = await ReportService.instance.getManufacturerAs(category: widget.report.category ?? 'appliance');
+      if (mounted) {
+        setState(() {
+          _asInfo = _filterAsInfo(result);
+          _isLoading = false;
+        });
+      }
     } on ApiException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = '제조사 A/S 정보를 불러오지 못했습니다: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = '제조사 A/S 정보를 불러오지 못했습니다: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
+  List<Map<String, dynamic>> _filterAsInfo(List<Map<String, dynamic>> rawList) {
+    if (rawList.isEmpty) return [];
+
+    final applianceType = widget.report.applianceType?.toLowerCase();
+    List<Map<String, dynamic>> filtered = [];
+
+    if (applianceType != null && applianceType.isNotEmpty) {
+      filtered = rawList.where((item) {
+        final type = item['appliance_type']?.toString().toLowerCase();
+        return type == applianceType;
+      }).toList();
+    }
+
+    if (filtered.isEmpty) {
+      final seen = <String>{};
+      for (final item in rawList) {
+        final name = (item['manufacturer_name'] ?? item['name'])?.toString() ?? '';
+        if (name.isNotEmpty && !seen.contains(name)) {
+          seen.add(name);
+          filtered.add(item);
+        }
+      }
+    }
+
+    return filtered;
+  }
+
   void _showContact(Map<String, dynamic> info) {
+    final name = info['manufacturer_name']?.toString() ?? info['name']?.toString() ?? '서비스 센터';
+    final phone = info['as_phone']?.toString() ?? info['phone']?.toString() ?? '연락처 정보가 없습니다.';
+    final url = info['as_url']?.toString() ?? info['url']?.toString();
+
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(info['name']?.toString() ?? '서비스 센터'),
-        content: Text(info['phone']?.toString() ?? '연락처 정보가 없습니다.'),
+        title: Text(name, style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('대표 번호: $phone', style: AppTextStyles.bodySemiBold14(color: AppColors.brandMain)),
+            if (url != null && url.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('홈페이지: $url', style: AppTextStyles.captionLight12(color: AppColors.gray6)),
+            ],
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('닫기')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인')),
         ],
       ),
     );
@@ -311,13 +358,18 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('제조사 AS', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-          const SizedBox(height: 26),
+          const SizedBox(height: 8),
+          Text(
+            '해당 가전의 제조사 공식 서비스 센터에 바로 연결할 수 있습니다.',
+            style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+          ),
+          const SizedBox(height: 20),
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_errorMessage != null)
@@ -326,7 +378,7 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
             Center(
               child: _ServiceCenterPill(
                 label: '서비스 센터로 연결',
-                onTap: () => _showContact({'name': '고객센터', 'phone': '연결된 제조사 정보가 없습니다.'}),
+                onTap: () => _showContact({'manufacturer_name': '고객센터', 'as_phone': '연결된 제조사 정보가 없습니다.'}),
               ),
             )
           else
@@ -335,7 +387,7 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
                 children: [
                   for (final info in _asInfo!) ...[
                     _ServiceCenterPill(
-                      label: info['name']?.toString() ?? '서비스 센터로 연결',
+                      label: info['manufacturer_name']?.toString() ?? info['name']?.toString() ?? '서비스 센터로 연결',
                       onTap: () => _showContact(info),
                     ),
                     const SizedBox(height: 16),

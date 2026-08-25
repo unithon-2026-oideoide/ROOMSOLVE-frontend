@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>수리 요청 및 수리 완료 확인을 위한 사진 촬영에 카메라 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>수리 요청 및 수리 완료 확인을 위한 사진 첨부에 앨범 접근 권한이 필요합니다.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>동영상 및 음성 기록을 위해 마이크 접근 권한이 필요합니다.</string>
 </dict>
 </plist>
