@@ -64,8 +64,13 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   }
 
   bool _isPending(Map<String, dynamic> r) {
-    final status = r['status']?.toString().toLowerCase();
-    return status == null || status.isEmpty || status == 'pending' || status == '승인 대기' || status.contains('대기');
+    final status = r['status']?.toString().toLowerCase() ?? '';
+    final quotes = r['quotes'] as List?;
+    final hasSelectedQuote = quotes?.any((q) => (q is Map) && q['status'] == 'selected') ?? false;
+    if (hasSelectedQuote || status == 'approved' || status == 'in_progress' || status == 'done' || status == 'completed' || status == 'rejected') {
+      return false;
+    }
+    return status.isEmpty || status == 'pending';
   }
 
   @override
@@ -158,53 +163,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                                 elevation: 0,
                               ),
                               child: Text('수리 요청 전체 보기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text('자동처리 한도 현황', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
-                          const SizedBox(height: 12),
-                          _SectionCard(
-                            title: '',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('이번 달 자동처리 사용액', style: AppTextStyles.bodyRegular16(color: const Color(0xFF212121))),
-                                          const SizedBox(height: 8),
-                                          Text('320,000원 / 500,000원', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
-                                        ],
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => context.push('/landlord/auto-approval'),
-                                      style: ElevatedButton.styleFrom(
-                                        // 앱 전역 테마의 minimumSize는 Size.fromHeight(47)
-                                        // (= 가로 무한대)라 전체 폭 버튼엔 맞지만, 이 버튼처럼
-                                        // Expanded 없이 Row 안에 놓이면 "BoxConstraints forces
-                                        // an infinite width" 레이아웃 예외로 앱이 죽는다.
-                                        // 여기서 명시적으로 덮어써 내용물 크기만큼만 차지하게 한다.
-                                        minimumSize: Size.zero,
-                                        backgroundColor: AppColors.brandLight,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                                        elevation: 0,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                      ),
-                                      child: Text('한도 설정', style: AppTextStyles.bodyRegular14(color: AppColors.white)),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '잔여 한도 180,000원. 한도 초과 시 임대인 승인이 필요합니다.',
-                                  style: AppTextStyles.bodyRegular12(color: const Color(0xFF212121)),
-                                ),
-                              ],
                             ),
                           ),
                           const SizedBox(height: 24),

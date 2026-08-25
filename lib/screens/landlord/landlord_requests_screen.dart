@@ -62,8 +62,18 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
   // 백엔드 reports.status는 pending/approved/rejected 세 값만 준다
   // (landlord.controller.ts approveRequest 확인함). rejected는 더 이상 처리할
   // 게 없는 상태라 "완료" 그룹으로 묶는다.
-  String _statusGroup(Map<String, dynamic> r) {
+  String _effectiveStatus(Map<String, dynamic> r) {
     final status = r['status']?.toString().toLowerCase() ?? '';
+    final quotes = r['quotes'] as List?;
+    final hasSelectedQuote = quotes?.any((q) => (q is Map) && q['status'] == 'selected') ?? false;
+    if (hasSelectedQuote && (status.isEmpty || status == 'pending')) {
+      return 'approved';
+    }
+    return status;
+  }
+
+  String _statusGroup(Map<String, dynamic> r) {
+    final status = _effectiveStatus(r);
     if (status == 'rejected' || status.contains('완료') || status == 'completed' || status == 'done') return '완료';
     if (status.contains('수리') || status.contains('진행') || status == 'in_progress' || status == 'approved') return '수리 대기';
     return '승인 대기';
@@ -117,8 +127,8 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                                     _RequestRow(
                                       title: formatRequestTitle(r),
                                       subtitle: formatRequestSubtitle(r),
-                                      badgeText: requestStatusLabel(r['status']?.toString()),
-                                      badgeColor: requestStatusColor(r['status']?.toString()),
+                                      badgeText: requestStatusLabel(_effectiveStatus(r)),
+                                      badgeColor: requestStatusColor(_effectiveStatus(r)),
                                       onTap: () => context.push('/landlord/requests/${r['id']}').then((_) => _load()),
                                     ),
                                     const SizedBox(height: 8),

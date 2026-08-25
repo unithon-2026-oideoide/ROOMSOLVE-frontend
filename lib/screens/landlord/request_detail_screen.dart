@@ -55,6 +55,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         quotes = await QuoteService.instance.getQuotes(reportId: widget.requestId);
       } catch (_) {}
 
+      // 만약 이미 선택된 견적이 있는데 status가 pending이라면 approved로 동기화
+      if (quotes.any((q) => q.status == 'selected') && (result['status']?.toString().toLowerCase() == 'pending')) {
+        result['status'] = 'approved';
+        LandlordService.instance.approveRequest(id: widget.requestId, approve: true).catchError((_) {});
+      }
+
       setState(() {
         _detail = result;
         _quotes = quotes;
@@ -77,6 +83,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     setState(() => _isSubmitting = true);
     try {
       await QuoteService.instance.updateQuoteStatus(quoteId: quote.id, status: 'selected');
+      try {
+        await LandlordService.instance.approveRequest(id: widget.requestId, approve: true);
+      } catch (_) {}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${quote.vendorName ?? '수리업체'} 견적을 선택하여 수리 승인했습니다.')),
@@ -131,12 +140,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              // 앱 전역 테마의 minimumSize(가로 무한대)가 AlertDialog.actions 같은
-              // Row류 레이아웃 안에서 "infinite width" 레이아웃 예외를 일으켰었다.
-              // Size.zero로 덮어써서 크래시는 막았지만, 그러면 이 버튼만 옆의 "취소"
-              // (OutlinedButton 기본 최소 크기 64x36)보다 훨씬 작게 쪼그라들어 두
-              // 버튼 높이가 어긋나 보였다. OutlinedButton과 같은 최소 크기를 줘서
-              // 크래시 없이 나란히 정렬되게 한다.
               minimumSize: const Size(64, 36),
               backgroundColor: const Color(0xFFD93333),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -150,14 +153,23 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     if (confirmed == true) await _reject();
   }
 
-  bool get _isPending {
+  String get _effectiveStatus {
     final status = _detail?['status']?.toString().toLowerCase() ?? '';
-    return status.isEmpty || status == 'pending' || status.contains('대기');
+    // 견적 목록 중 선택된(selected) 견적이 하나라도 있으면 무조건 'approved'(수리 대기)
+    if (_quotes.any((q) => q.status == 'selected')) {
+      return 'approved';
+    }
+    return status;
   }
 
-  String get _statusLabel => requestStatusLabel(_detail?['status']?.toString());
+  bool get _isPending {
+    final status = _effectiveStatus;
+    return status.isEmpty || status == 'pending';
+  }
 
-  Color get _statusColor => requestStatusColor(_detail?['status']?.toString());
+  String get _statusLabel => requestStatusLabel(_effectiveStatus);
+
+  Color get _statusColor => requestStatusColor(_effectiveStatus);
 
   @override
   Widget build(BuildContext context) {
