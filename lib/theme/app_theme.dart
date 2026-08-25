@@ -1,4 +1,9 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+// prefix로 가져온다: Flutter 버전에 따라 CupertinoPageTransitionsBuilder를
+// material.dart도 같이 내보내는 경우가 있어서, 이름만 show로 가져오면 "두 라이브러리에
+// 같은 이름이 있다"는 ambiguous import 에러가 SDK 버전마다 나거나 안 나거나 한다.
+// prefix를 쓰면 어느 쪽에서 왔든 cupertino.CupertinoPageTransitionsBuilder로만
+// 가리키니 버전에 상관없이 항상 명확하다.
+import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
@@ -31,12 +36,12 @@ class AppTheme {
       // 목록→상세, 설정→하위 화면 등 진입 경로와 무관하게) 전부 적용된다.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.android: cupertino.CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: cupertino.CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: cupertino.CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: cupertino.CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: cupertino.CupertinoPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: cupertino.CupertinoPageTransitionsBuilder(),
         },
       ),
       appBarTheme: AppBarTheme(
