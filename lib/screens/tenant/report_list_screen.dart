@@ -26,7 +26,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
 
   // reports.status는 실제로 pending/approved/rejected 세 값만 나온다
   // (landlord.controller.ts approveRequest 확인함). Report.statusLabel과 맞춘다.
-  static const _filters = ['전체', '접수 완료', '승인됨', '거절됨'];
+  static const _filters = ['전체', '접수 완료', '수리 대기', '완료', '거절됨'];
 
   @override
   void initState() {
@@ -62,6 +62,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
     switch (label) {
       case '접수 완료':
         return AppColors.accentGreen;
+      case '수리 대기':
       case '승인됨':
         return AppColors.brandMain;
       case '거절됨':
