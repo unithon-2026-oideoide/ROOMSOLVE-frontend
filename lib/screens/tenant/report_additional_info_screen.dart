@@ -132,21 +132,16 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
     );
   }
 
-  Widget _dropdown(String hint, String? value, List<String> options, ValueChanged<String?> onChanged) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: _fieldBoxDecoration,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: value,
-          hint: Text(hint, style: AppTextStyles.bodyRegular14(color: const Color(0xFF8C8C8C))),
-          icon: const Icon(Icons.expand_more, size: 16, color: Color(0xFF212121)),
-          items: [for (final o in options) DropdownMenuItem(value: o, child: Text(o))],
-          onChanged: onChanged,
-          style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121)),
-        ),
-      ),
+  // 문제 발생 시점/발생 빈도처럼 옵션이 몇 개 안 되는 단일 선택 필드는 네이티브
+  // DropdownButton(시스템 팝업 메뉴) 대신, 이 화면의 "방문 가능한 시간대"가 이미
+  // 쓰던 것과 같은 알약 칩으로 통일한다.
+  Widget _choiceChips(String? value, List<String> options, ValueChanged<String> onChanged) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final o in options) _OptionChip(label: o, selected: value == o, onTap: () => onChanged(o)),
+      ],
     );
   }
 
@@ -222,37 +217,39 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                     const SizedBox(height: 20),
                     _fieldCard(
                       label: '문제 발생 시점',
-                      field: _dropdown(
-                        '언제부터 발생했나요? (예: 3일 전, 지난주)',
-                        _when,
-                        _whenOptions,
-                        (v) => setState(() => _when = v),
+                      field: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '언제부터 발생했나요? (예: 3일 전, 지난주)',
+                            style: AppTextStyles.bodyRegular12(color: AppColors.gray7),
+                          ),
+                          const SizedBox(height: 10),
+                          _choiceChips(_when, _whenOptions, (v) => setState(() => _when = v)),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
                     _fieldCard(
                       label: '발생 빈도',
-                      field: _dropdown(
-                        '얼마나 자주 발생하나요?',
-                        _frequency,
-                        _frequencyOptions,
-                        (v) => setState(() => _frequency = v),
-                      ),
+                      field: _choiceChips(_frequency, _frequencyOptions, (v) => setState(() => _frequency = v)),
                     ),
                     const SizedBox(height: 20),
                     _fieldCard(
                       label: '피해 범위',
-                      field: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: _fieldBoxDecoration,
-                        child: TextField(
-                          controller: _areaController,
-                          style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121)),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            hintText: '누수, 냄새 등 영향을 받는 공간을 입력해 주세요',
-                            hintStyle: AppTextStyles.bodyRegular14(color: const Color(0xFF8C8C8C)),
+                      field: TextField(
+                        controller: _areaController,
+                        style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.gray1,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          hintText: '누수, 냄새 등 영향을 받는 공간을 입력해 주세요',
+                          hintStyle: AppTextStyles.bodyRegular14(color: AppColors.gray5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
@@ -276,10 +273,10 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                             onChanged: (v) => setState(() => _hasPriorRepair = v!),
                             child: Row(
                               children: [
-                                Radio<bool>(value: true, activeColor: AppColors.black),
+                                Radio<bool>(value: true, activeColor: AppColors.brandMain),
                                 Text('있음', style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121))),
                                 const SizedBox(width: 24),
-                                Radio<bool>(value: false, activeColor: AppColors.black),
+                                Radio<bool>(value: false, activeColor: AppColors.brandMain),
                                 Text('없음', style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121))),
                               ],
                             ),
@@ -370,6 +367,35 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
             ),
             const AppBottomNav(current: AppBottomNavTab.reports),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 단일 선택 필드(문제 발생 시점, 발생 빈도)에 쓰는 알약 칩 하나.
+/// report_list_screen.dart의 StatusFilterRow와 같은 톤 — 선택되면 브랜드
+/// 블루 채움, 아니면 연한 회색.
+class _OptionChip extends StatelessWidget {
+  const _OptionChip({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.brandMain : AppColors.gray1,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyRegular14(color: selected ? AppColors.white : AppColors.gray7),
         ),
       ),
     );
