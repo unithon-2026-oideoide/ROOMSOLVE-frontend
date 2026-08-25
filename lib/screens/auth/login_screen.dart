@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     style: AppTextStyles.bodyRegular14(color: AppColors.black),
-                    decoration: _pillDecoration('전화번호'),
+                    decoration: _pillDecoration('이메일'),
                   ),
                 ),
                 const SizedBox(height: 8),
