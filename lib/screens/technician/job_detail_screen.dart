@@ -116,11 +116,27 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         children: [
                           Text(job.symptomDescription, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
                           const SizedBox(height: 8),
-                          Container(
-                            height: 160,
-                            width: double.infinity,
-                            decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
-                          ),
+                          if (job.photoUrls.isNotEmpty)
+                            for (final url in job.photoUrls)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(url, height: 160, width: double.infinity, fit: BoxFit.cover),
+                                ),
+                              )
+                          else if (job.photoUrl != null && job.photoUrl!.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(job.photoUrl!, height: 160, width: double.infinity, fit: BoxFit.cover),
+                            )
+                          else
+                            Container(
+                              height: 160,
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
+                              child: const Center(child: Text('첨부 사진 없음', style: TextStyle(color: AppColors.gray6))),
+                            ),
                         ],
                       ),
                     ),

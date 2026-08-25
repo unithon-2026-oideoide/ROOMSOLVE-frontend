@@ -1,8 +1,5 @@
 /// GET /api/repair/schedule(technicianId=)와 GET /api/reports/{id}를 조합해
-/// 화면에 필요한 형태로 만든다. 백엔드 Report/RepairSchedule에는 위치, 세입자
-/// 연락처, 작업 지시 같은 필드가 없어 해당 항목은 빈 값으로 둔다(화면에서
-/// "정보 없음"으로 표시). 실제 배정 일정이 하나도 없을 때만 [mockTechnicianJobs]로
-/// 대체해 화면이 비어 보이지 않게 한다.
+/// 화면에 필요한 형태로 만든다.
 import '../core/category_helpers.dart';
 
 enum TechnicianJobStatus { scheduled, inProgress, onHold, completed }
@@ -24,6 +21,8 @@ class TechnicianJob {
     this.estimatedCost,
     this.actualCost,
     this.scheduleId,
+    this.photoUrl,
+    this.photoUrls = const [],
   });
 
   final String id;
@@ -40,8 +39,10 @@ class TechnicianJob {
   final String receivedAt;
   final String? estimatedCost;
   final String? actualCost;
-  /// 실제 RepairSchedule 항목의 id (PATCH .../confirm에 필요). 목업 데이터는 null.
+  /// 실제 RepairSchedule 항목의 id (PATCH .../confirm에 필요).
   final String? scheduleId;
+  final String? photoUrl;
+  final List<String> photoUrls;
 
   String get statusLabel {
     switch (status) {
@@ -71,9 +72,31 @@ class TechnicianJob {
     }
   }
 
-  static TechnicianJobStatus _resolveStatus({required bool confirmed, required String? reportStatus}) {
-    if (reportStatus == 'done' || reportStatus == 'completed' || reportStatus == '완료') {
+  static TechnicianJobStatus _resolveStatus({
+    required bool confirmed,
+    required String? reportStatus,
+    String? currentRepairStatus,
+  }) {
+    final timeline = currentRepairStatus?.toLowerCase();
+    if (timeline == 'done' || timeline == 'completed' || timeline == '완료') {
       return TechnicianJobStatus.completed;
+    }
+    if (timeline == 'in_progress' || timeline == '진행' || timeline == '진행 중') {
+      return TechnicianJobStatus.inProgress;
+    }
+    if (timeline == 'confirmed') {
+      return TechnicianJobStatus.inProgress;
+    }
+    if (timeline == 'scheduled') {
+      return TechnicianJobStatus.scheduled;
+    }
+
+    final report = reportStatus?.toLowerCase();
+    if (report == 'done' || report == 'completed' || report == '완료') {
+      return TechnicianJobStatus.completed;
+    }
+    if (report == 'in_progress') {
+      return TechnicianJobStatus.inProgress;
     }
     return confirmed ? TechnicianJobStatus.inProgress : TechnicianJobStatus.scheduled;
   }
@@ -88,7 +111,8 @@ class TechnicianJob {
   }
 
   static String _formatReceivedAt(String? isoString) {
-    final dt = isoString != null ? DateTime.tryParse(isoString)?.toLocal() : null;
+    if (isoString == null) return '날짜 미상';
+    final dt = DateTime.tryParse(isoString)?.toLocal();
     if (dt == null) return '날짜 미상';
     return '${dt.year}년 ${dt.month}월 ${dt.day}일';
   }
@@ -96,22 +120,41 @@ class TechnicianJob {
   factory TechnicianJob.fromApi({
     required Map<String, dynamic> schedule,
     required Map<String, dynamic> report,
+    String? currentRepairStatus,
   }) {
     final confirmed = schedule['confirmed'] == true;
+    final photoUrl = report['photo_url']?.toString() ?? schedule['photo_url']?.toString();
+    final rawPhotoUrls = report['photo_urls'] ?? schedule['photo_urls'];
+    final photoUrls = (rawPhotoUrls is List)
+        ? rawPhotoUrls.map((e) => e.toString()).toList()
+        : (photoUrl != null ? [photoUrl] : <String>[]);
+
+    final tenant = (report['tenant'] is Map) ? (report['tenant'] as Map) : null;
+    final tenantName = tenant?['name']?.toString() ?? report['tenant_name']?.toString() ?? '';
+    final tenantPhone = tenant?['phone']?.toString() ?? report['tenant_phone']?.toString() ?? '';
+    final unit = report['unit']?.toString() ?? '';
+    final address = report['address']?.toString() ?? '';
+
     return TechnicianJob(
-      id: report['id']?.toString() ?? '',
+      id: report['id']?.toString() ?? schedule['report_id']?.toString() ?? '',
       title: formatReportTitle(report['category']?.toString(), report['description']?.toString()),
-      unit: '',
-      tenantName: '',
-      address: '',
+      unit: unit,
+      tenantName: tenantName,
+      address: address,
       visitTime: _formatVisitTime(schedule['scheduled_at']?.toString()),
       priority: _severityToPriority(report['severity']?.toString()),
-      status: _resolveStatus(confirmed: confirmed, reportStatus: report['status']?.toString()),
+      status: _resolveStatus(
+        confirmed: confirmed,
+        reportStatus: report['status']?.toString(),
+        currentRepairStatus: currentRepairStatus,
+      ),
       symptomDescription: report['description']?.toString() ?? '증상 설명이 없습니다.',
-      instruction: '작업 지시 정보가 아직 제공되지 않습니다.',
-      contactPhone: '연락처 정보 없음',
-      receivedAt: _formatReceivedAt(report['created_at']?.toString()),
+      instruction: report['self_fix_guide']?.toString() ?? '작업 지시 정보가 아직 제공되지 않습니다.',
+      contactPhone: tenantPhone.isNotEmpty ? tenantPhone : '연락처 정보 없음',
+      receivedAt: _formatReceivedAt(report['created_at']?.toString() ?? schedule['created_at']?.toString()),
       scheduleId: schedule['id']?.toString(),
+      photoUrl: photoUrl,
+      photoUrls: photoUrls,
     );
   }
 }

@@ -70,63 +70,71 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
           children: [
             const AppTopBar(),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                children: [
-                  Text('배정 작업 목록', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAFAFA),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: AppColors.dropShadow,
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  children: [
+                    Text('배정 작업 목록', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('작업 상태', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
+                          const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Text('작업 상태', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
-                        const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
+                        for (final f in _filters)
+                          GestureDetector(
+                            onTap: () => setState(() => _filter = f),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _filter == f ? AppColors.brandDark : AppColors.brandLight,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(f, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final f in _filters)
-                        GestureDetector(
-                          onTap: () => setState(() => _filter = f),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _filter == f ? AppColors.brandDark : AppColors.brandLight,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(f, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  for (final group in _groupOrder)
-                    if (jobs.any((j) => j.status == group.$2)) ...[
-                      Text(group.$1, style: AppTextStyles.subtitleBold18(color: AppColors.black)),
-                      const SizedBox(height: 8),
-                      for (final job in jobs.where((j) => j.status == group.$2)) ...[
-                        _JobRow(job: job, onTap: () => context.push('/technician/jobs/${job.id}', extra: job)),
+                    const SizedBox(height: 16),
+                    for (final group in _groupOrder)
+                      if (jobs.any((j) => j.status == group.$2)) ...[
+                        Text(group.$1, style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+                        const SizedBox(height: 8),
+                        for (final job in jobs.where((j) => j.status == group.$2)) ...[
+                          _JobRow(job: job, onTap: () => context.push('/technician/jobs/${job.id}', extra: job)),
+                          const SizedBox(height: 8),
+                        ],
                         const SizedBox(height: 8),
                       ],
-                      const SizedBox(height: 8),
-                    ],
-                  if (jobs.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Center(child: Text('해당 상태의 작업이 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6))),
-                    ),
-                ],
+                    if (jobs.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: Text(
+                            _filter == '전체' ? '배정된 수리 작업이 없습니다.' : '$_filter 상태의 작업이 없습니다.',
+                            style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/technician', reportsPath: '/technician/jobs'),

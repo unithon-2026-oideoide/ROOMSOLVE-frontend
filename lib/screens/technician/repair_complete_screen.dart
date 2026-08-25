@@ -122,11 +122,17 @@ class _RepairCompleteScreenState extends State<RepairCompleteScreen> {
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: AppColors.dropShadow,
                       ),
-                      child: Container(
-                        height: 240,
-                        width: double.infinity,
-                        decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
-                      ),
+                      child: (job.photoUrl != null && job.photoUrl!.isNotEmpty)
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(job.photoUrl!, height: 240, width: double.infinity, fit: BoxFit.cover),
+                            )
+                          : Container(
+                              height: 240,
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
+                              child: const Center(child: Text('첨부 사진 없음', style: TextStyle(color: AppColors.gray6))),
+                            ),
                     ),
                     const SizedBox(height: 20),
                     Text('비용 현황', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
