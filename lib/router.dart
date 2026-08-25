@@ -58,7 +58,10 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(path: '/', builder: (context, state) => const SizedBox.shrink()),
 
       // 세입자
-      GoRoute(path: '/tenant', builder: (context, state) => const TenantHomeScreen()),
+      GoRoute(
+        path: '/tenant',
+        pageBuilder: (context, state) => const NoTransitionPage(child: TenantHomeScreen()),
+      ),
       GoRoute(path: '/tenant/reports', builder: (context, state) => const ReportListScreen()),
       GoRoute(path: '/tenant/reports/new', builder: (context, state) => const ReportCreateScreen()),
       GoRoute(
@@ -89,7 +92,10 @@ GoRouter buildRouter(AuthProvider authProvider) {
       ),
 
       // 임대인
-      GoRoute(path: '/landlord', builder: (context, state) => const LandlordDashboardScreen()),
+      GoRoute(
+        path: '/landlord',
+        pageBuilder: (context, state) => const NoTransitionPage(child: LandlordDashboardScreen()),
+      ),
       GoRoute(path: '/landlord/requests', builder: (context, state) => const LandlordRequestsScreen()),
       GoRoute(
         path: '/landlord/requests/:id',
@@ -107,7 +113,10 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(path: '/landlord/units', builder: (context, state) => const LandlordUnitsScreen()),
 
       // 수리기사
-      GoRoute(path: '/technician', builder: (context, state) => const TechnicianHomeScreen()),
+      GoRoute(
+        path: '/technician',
+        pageBuilder: (context, state) => const NoTransitionPage(child: TechnicianHomeScreen()),
+      ),
       GoRoute(path: '/technician/jobs', builder: (context, state) => const TechnicianJobListScreen()),
       GoRoute(
         path: '/technician/jobs/:id',
