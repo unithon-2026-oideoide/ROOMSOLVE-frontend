@@ -21,6 +21,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   final _picker = ImagePicker();
   bool _isSubmitting = false;
   String? _errorMessage;
+  String _statusMessage = '';
 
   @override
   void dispose() {
@@ -36,24 +37,39 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   }
 
   Future<void> _submit() async {
+    if (_photos.isEmpty) return;
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _statusMessage = '사진 업로드 중... (0/${_photos.length})';
     });
     try {
       final Report result = await ReportService.instance.analyzeReport(
         description: _descriptionController.text.trim(),
         photos: _photos,
+        onUploadProgress: (completed, total) {
+          if (!mounted) return;
+          setState(() {
+            _statusMessage = completed >= total ? 'AI 분석 중...' : '사진 업로드 중... ($completed/$total)';
+          });
+        },
       );
       if (mounted) {
         context.push('/tenant/reports/result', extra: result);
       }
+    } on PhotoUploadException catch (e) {
+      setState(() => _errorMessage = '사진 업로드에 실패했습니다: ${e.message}');
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
       setState(() => _errorMessage = '요청 처리 중 오류가 발생했습니다: $e');
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _statusMessage = '';
+        });
+      }
     }
   }
 
@@ -96,7 +112,13 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            if (_photos.isEmpty)
+              const Text(
+                '사진을 최소 1장 첨부해주세요.',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            const SizedBox(height: 4),
             if (_photos.isNotEmpty)
               Wrap(
                 spacing: 8,
@@ -127,8 +149,13 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               ),
+            if (_isSubmitting && _statusMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(_statusMessage, textAlign: TextAlign.center),
+              ),
             FilledButton(
-              onPressed: _isSubmitting ? null : _submit,
+              onPressed: (_isSubmitting || _photos.isEmpty) ? null : _submit,
               child: _isSubmitting
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('AI 분석 요청'),

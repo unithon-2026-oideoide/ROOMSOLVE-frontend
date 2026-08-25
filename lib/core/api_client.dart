@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -53,6 +55,16 @@ class ApiClient {
 
   Future<Response<dynamic>> patch(String path, {Object? data}) {
     return _run(() => _dio.patch(path, data: data));
+  }
+
+  /// 파일 하나를 /api/uploads로 업로드한다. 필드명은 file 고정.
+  Future<Response<dynamic>> uploadFile(File file) {
+    return _run(() async {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
+      });
+      return _dio.post('/api/uploads', data: formData);
+    });
   }
 
   Future<Response<dynamic>> _run(Future<Response<dynamic>> Function() request) async {

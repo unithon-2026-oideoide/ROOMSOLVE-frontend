@@ -19,6 +19,9 @@ class Report {
   final String? category;
   final String? severity;
   final String? description;
+  /// 대표 사진 URL (백엔드 photo_url, NOT NULL).
+  final String? photoUrl;
+  /// 전체 사진 URL 목록 (백엔드 photo_urls).
   final List<String> photoUrls;
   final RecommendedPath recommendedPath;
   final String? selfFixGuide;
@@ -30,6 +33,7 @@ class Report {
     this.category,
     this.severity,
     this.description,
+    this.photoUrl,
     this.photoUrls = const [],
     this.recommendedPath = RecommendedPath.unknown,
     this.selfFixGuide,
@@ -43,7 +47,8 @@ class Report {
       category: json['category']?.toString(),
       severity: json['severity']?.toString(),
       description: json['description']?.toString(),
-      photoUrls: (json['photoUrls'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      photoUrl: json['photo_url']?.toString(),
+      photoUrls: (json['photo_urls'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       recommendedPath: recommendedPathFromString(json['recommended_path']?.toString()),
       selfFixGuide: json['self_fix_guide']?.toString(),
       status: json['status']?.toString(),
