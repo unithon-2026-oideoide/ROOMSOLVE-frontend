@@ -435,15 +435,15 @@ class _QuoteItem extends StatelessWidget {
   final bool isSubmitting;
   final VoidCallback onSelect;
 
+  // 'recommended'는 견적 제출 직후의 초기 상태값일 뿐 추천이 아니다. 예전에는 이걸
+  // "추천"으로 표시해서 제출된 모든 견적에 추천 배지가 붙었다. 실제 추천은 서버가
+  // 가격·평점으로 매긴 1위(quote.isRecommended)이고 아래에서 따로 표시한다.
   String get _statusText {
     switch (quote.status.toLowerCase()) {
       case 'rejected':
         return '거절됨';
       case 'selected':
         return '선택됨';
-      case 'recommended':
-        return '추천';
-      case 'pending':
       default:
         return '제출됨';
     }
@@ -455,12 +455,17 @@ class _QuoteItem extends StatelessWidget {
         return AppColors.accentRed;
       case 'selected':
         return AppColors.brandMain;
-      case 'recommended':
-        return AppColors.accentGreen;
-      case 'pending':
       default:
         return AppColors.gray5;
     }
+  }
+
+  Widget _badge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(999)),
+      child: Text(text, style: AppTextStyles.captionLight12(color: AppColors.white)),
+    );
   }
 
   String _formatPrice(num? price) {
@@ -482,8 +487,17 @@ class _QuoteItem extends StatelessWidget {
         ? formatDateTime(quote.proposedVisitAt!.toIso8601String())
         : '방문 시간 미지정';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    // 추천 견적만 테두리로 감싸 목록에서 바로 눈에 띄게 한다.
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: quote.isRecommended ? const EdgeInsets.all(12) : EdgeInsets.zero,
+      decoration: quote.isRecommended
+          ? BoxDecoration(
+              color: AppColors.brandMain.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.brandMain),
+            )
+          : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -491,36 +505,52 @@ class _QuoteItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       quote.vendorName ?? '수리업체',
                       style: AppTextStyles.bodySemiBold14(color: AppColors.black),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _statusBadgeColor,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        _statusText,
-                        style: AppTextStyles.captionLight12(color: AppColors.white),
-                      ),
-                    ),
+                    if (quote.isRecommended) _badge('추천', AppColors.brandMain),
+                    _badge(_statusText, _statusBadgeColor),
+                    if (quote.isOutlier) _badge('과도한 견적', AppColors.accentRed),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '견적 금액: ${_formatPrice(quote.price)}',
-                  style: AppTextStyles.bodySemiBold14(color: AppColors.brandDark),
+                Row(
+                  children: [
+                    Text(
+                      _formatPrice(quote.price),
+                      style: AppTextStyles.bodySemiBold14(color: AppColors.brandDark),
+                    ),
+                    if (quote.vendorRating != null) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.star, size: 13, color: Color(0xFFF5A623)),
+                      const SizedBox(width: 2),
+                      Text(
+                        quote.vendorRating!.toStringAsFixed(1),
+                        style: AppTextStyles.bodyRegular12(color: AppColors.gray7),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '방문 가능 시간: $visitTimeStr',
                   style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
                 ),
+                // 배지만 달면 "왜 이게 추천인지"를 되묻게 된다. 서버가 붙여 준 한 줄을
+                // 그대로 보여 준다 (예: "최저가보다 5,000원(5%) 비싸지만 평점이 0.6점 높습니다").
+                if (quote.recommendReason != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    quote.recommendReason!,
+                    style: AppTextStyles.bodyRegular12(color: AppColors.brandDark),
+                  ),
+                ],
               ],
             ),
           ),
