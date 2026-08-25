@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -129,7 +130,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     return status.isEmpty || status == 'pending' || status.contains('대기');
   }
 
-  String get _statusLabel => _detail?['status']?.toString() ?? '승인 대기';
+  String get _statusLabel => requestStatusLabel(_detail?['status']?.toString());
+
+  Color get _statusColor => requestStatusColor(_detail?['status']?.toString());
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +175,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               Expanded(child: Text('수리 요청 상세', style: AppTextStyles.subtitleBold22(color: AppColors.black))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(color: AppColors.accentGreen, borderRadius: BorderRadius.circular(999)),
+                decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(999)),
                 child: Text(_statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
               ),
             ],
@@ -183,10 +186,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             child: Column(
               children: [
                 _KeyValueRow('요청 번호', d['id']?.toString() ?? widget.requestId),
-                _KeyValueRow('신고 일시', d['created_at']?.toString() ?? '-'),
+                _KeyValueRow('신고 일시', formatDateTime(d['created_at']?.toString())),
                 _KeyValueRow('세입자', (d['tenant'] as Map?)?['name']?.toString() ?? '-'),
                 _KeyValueRow('세입자 연락처', (d['tenant'] as Map?)?['phone']?.toString() ?? '-'),
-                _KeyValueRow('유형', d['category']?.toString() ?? '-'),
+                _KeyValueRow('유형', categoryLabel(d['category']?.toString())),
               ],
             ),
           ),
@@ -206,7 +209,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _Chip(text: '긴급도: ${d['severity']}'),
+                      _Chip(text: '긴급도: ${severityLabel(d['severity']?.toString())}'),
                     ],
                   ),
                 const SizedBox(height: 8),

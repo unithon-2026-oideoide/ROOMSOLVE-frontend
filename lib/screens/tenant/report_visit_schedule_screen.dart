@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
@@ -95,7 +96,7 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
                                 _InfoRow(label: '날짜', value: dateLabel),
                                 _InfoRow(label: '시간', value: timeLabel),
                                 _InfoRow(label: '담당 기사', value: technicianLabel),
-                                _InfoRow(label: '작업 내용', value: report.category ?? '화장실 누수 점검 및 수리'),
+                                _InfoRow(label: '작업 내용', value: report.category != null ? '${categoryLabel(report.category)} 점검 및 수리' : '화장실 누수 점검 및 수리'),
                               ],
                             ),
                           ),

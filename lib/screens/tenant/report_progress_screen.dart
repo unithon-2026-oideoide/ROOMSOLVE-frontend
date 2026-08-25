@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
@@ -124,7 +125,7 @@ class _ReportProgressScreenState extends State<ReportProgressScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        report.category ?? report.description ?? '분류 대기 중',
+                                        formatReportTitle(report.category, report.description),
                                         style: AppTextStyles.bodyRegular16(color: AppColors.gray8),
                                       ),
                                       const SizedBox(height: 4),

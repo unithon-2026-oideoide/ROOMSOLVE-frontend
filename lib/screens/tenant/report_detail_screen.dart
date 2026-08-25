@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
@@ -104,7 +105,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            report.category ?? report.description ?? '분류 대기 중',
+                            formatReportTitle(report.category, report.description),
                             style: AppTextStyles.subtitleBold22(color: AppColors.black),
                           ),
                         ),
@@ -128,8 +129,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                       title: '핵심 요약',
                       child: Column(
                         children: [
-                          _Row('문제 유형', report.category ?? '-'),
-                          _Row('긴급도', report.severity ?? '보통'),
+                          _Row('문제 유형', categoryLabel(report.category)),
+                          _Row('긴급도', severityLabel(report.severity)),
                           _Row('비용 부담', '임대인 부담'),
                         ],
                       ),

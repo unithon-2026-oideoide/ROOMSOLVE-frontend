@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/report_service.dart';
@@ -207,7 +208,7 @@ class _ReportProgressCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  report.category ?? report.description ?? '분류 대기 중',
+                  formatReportTitle(report.category, report.description),
                   style: AppTextStyles.bodySemiBold16(color: AppColors.gray8),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

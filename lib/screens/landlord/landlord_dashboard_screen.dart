@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
@@ -137,8 +138,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                           else
                             for (final r in pendingRequests.take(3)) ...[
                               _PendingRequestCard(
-                                title: r['title']?.toString() ?? r['category']?.toString() ?? '수리 요청 #${r['id']}',
-                                subtitle: r['summary']?.toString() ?? '승인이 필요합니다.',
+                                title: formatRequestTitle(r),
+                                subtitle: formatRequestSubtitle(r).isNotEmpty ? formatRequestSubtitle(r) : '승인이 필요합니다.',
                                 onTap: () => context.push('/landlord/requests/${r['id']}'),
                               ),
                               const SizedBox(height: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
@@ -181,7 +182,7 @@ class _ReportRow extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    report.category ?? report.description ?? '분류 대기 중',
+                    formatReportTitle(report.category, report.description),
                     style: AppTextStyles.subtitleSemiBold16(color: AppColors.gray8),
                   ),
                 ),

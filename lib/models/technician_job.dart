@@ -3,6 +3,8 @@
 /// 연락처, 작업 지시 같은 필드가 없어 해당 항목은 빈 값으로 둔다(화면에서
 /// "정보 없음"으로 표시). 실제 배정 일정이 하나도 없을 때만 [mockTechnicianJobs]로
 /// 대체해 화면이 비어 보이지 않게 한다.
+import '../core/category_helpers.dart';
+
 enum TechnicianJobStatus { scheduled, inProgress, onHold, completed }
 
 class TechnicianJob {
@@ -98,7 +100,7 @@ class TechnicianJob {
     final confirmed = schedule['confirmed'] == true;
     return TechnicianJob(
       id: report['id']?.toString() ?? '',
-      title: report['category']?.toString() ?? report['description']?.toString() ?? '수리 요청',
+      title: formatReportTitle(report['category']?.toString(), report['description']?.toString()),
       unit: '',
       tenantName: '',
       address: '',

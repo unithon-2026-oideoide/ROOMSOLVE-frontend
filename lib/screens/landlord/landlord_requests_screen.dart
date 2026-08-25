@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -123,8 +124,8 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                                   const SizedBox(height: 8),
                                   for (final r in grouped[group]!) ...[
                                     _RequestRow(
-                                      title: r['title']?.toString() ?? r['category']?.toString() ?? '수리 요청 #${r['id']}',
-                                      subtitle: r['unit']?.toString() ?? r['location']?.toString() ?? '',
+                                      title: formatRequestTitle(r),
+                                      subtitle: formatRequestSubtitle(r),
                                       badgeText: group,
                                       badgeColor: _statusColor(group),
                                       onTap: () => context.push('/landlord/requests/${r['id']}'),
