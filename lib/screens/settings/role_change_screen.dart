@@ -11,10 +11,28 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-const _roleOptions = [UserRole.tenant, UserRole.landlord, UserRole.technician];
+class _RoleOption {
+  const _RoleOption(this.role, this.title, this.description);
+  final UserRole role;
+  final String title;
+  final String description;
+}
+
+const _roleOptions = [
+  _RoleOption(UserRole.tenant, '세입자', '수리 문제를 신고하고 해결 진행 상황을 확인합니다.'),
+  _RoleOption(UserRole.landlord, '임대인', '수리 요청을 검토하고 수리 진행을 승인 관리합니다.'),
+  _RoleOption(UserRole.technician, '수리기사', '배정된 수리 작업을 확인하고 현장 처리를 등록합니다.'),
+];
 
 /// "사용자 유형 변경 화면". PATCH /api/users/{id}/role를 호출해 서버에 반영한다
 /// (AuthProvider.updateRole 경유).
+///
+/// 유형 선택을 showModalBottomSheet로 띄웠다가, 바텀시트가 닫히는 애니메이션이
+/// 끝나기 전에 context.go()로 라우트 스택 전체를 교체하면서 Flutter 렌더링
+/// 엔진의 '!semantics.parentDataDirty' assertion으로 앱이 죽는 문제가 있었다.
+/// 한 프레임만 지연시켜도 재현됐던 걸 보면 애니메이션 시간과의 경합 문제라
+/// 딜레이를 늘리는 식으로는 기기마다 다르게 깨질 수 있어, 아예 모달을 없애고
+/// 화면 안에 카드로 유형을 고르게 바꿨다.
 class RoleChangeScreen extends StatefulWidget {
   const RoleChangeScreen({super.key});
 
@@ -23,25 +41,13 @@ class RoleChangeScreen extends StatefulWidget {
 }
 
 class _RoleChangeScreenState extends State<RoleChangeScreen> {
+  UserRole? _pendingRole;
   bool _isSubmitting = false;
   String? _errorMessage;
 
   Future<void> _requestChange() async {
-    final selected = await showModalBottomSheet<UserRole>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            for (final role in _roleOptions)
-              ListTile(
-                title: Text(roleLabel(role)),
-                onTap: () => Navigator.pop(context, role),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (selected == null || !mounted) return;
+    final selected = _pendingRole;
+    if (selected == null) return;
 
     setState(() {
       _isSubmitting = true;
@@ -49,16 +55,7 @@ class _RoleChangeScreenState extends State<RoleChangeScreen> {
     });
     try {
       await context.read<AuthProvider>().updateRole(selected);
-      if (mounted) {
-        // 바텀시트가 닫히는 애니메이션이 끝나기 전에 context.go로 라우트
-        // 스택 전체를 교체하면 Flutter 렌더링 엔진이
-        // '!semantics.parentDataDirty' assertion으로 죽는 경우가 있어,
-        // 다음 프레임으로 미뤄 현재 프레임/시맨틱스 트리가 먼저 정리되게 한다.
-        final target = homePathForRole(selected);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go(target);
-        });
-      }
+      if (mounted) context.go(homePathForRole(selected));
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
@@ -66,6 +63,48 @@ class _RoleChangeScreenState extends State<RoleChangeScreen> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Widget _roleCard(_RoleOption option, UserRole currentRole) {
+    final isCurrent = option.role == currentRole;
+    final isPending = option.role == _pendingRole;
+    return GestureDetector(
+      onTap: isCurrent ? null : () => setState(() => _pendingRole = option.role),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isPending ? AppColors.brandMain : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: AppColors.dropShadow,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(option.title, style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
+                  const SizedBox(height: 4),
+                  Text(option.description, style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
+                ],
+              ),
+            ),
+            if (isCurrent)
+              Text('현재 유형', style: AppTextStyles.captionRegular10(color: AppColors.gray5))
+            else
+              Icon(
+                isPending ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: isPending ? AppColors.brandMain : AppColors.gray3,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -86,39 +125,27 @@ class _RoleChangeScreenState extends State<RoleChangeScreen> {
                   children: [
                     Text('사용자 유형 변경', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: AppColors.dropShadow,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('현재 유형', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
-                          const SizedBox(height: 8),
-                          Text(roleLabel(role), style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     Text(
-                      '유형을 변경하면 서비스 이용 범위와 시작 화면이 달라집니다. 변경 요청을 제출하면 유형 선택 화면으로 이동합니다.',
+                      '유형을 변경하면 서비스 이용 범위와 시작 화면이 달라집니다. 아래에서 새 유형을 선택한 뒤 변경 요청을 눌러주세요.',
                       style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
                     ),
-                    if (_errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    for (final option in _roleOptions) ...[
+                      _roleCard(option, role),
                       const SizedBox(height: 12),
+                    ],
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 4),
                       Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     SizedBox(
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _requestChange,
+                        onPressed: (_isSubmitting || _pendingRole == null) ? null : _requestChange,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandLight,
+                          disabledBackgroundColor: AppColors.gray3,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
