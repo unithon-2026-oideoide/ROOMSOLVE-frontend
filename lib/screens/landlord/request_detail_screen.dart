@@ -105,6 +105,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
+              // 앱 전역 테마의 minimumSize(가로 무한대)가 AlertDialog.actions 같은
+              // Row류 레이아웃 안에서 "infinite width" 레이아웃 예외를 일으켜 덮어쓴다.
+              minimumSize: Size.zero,
               backgroundColor: const Color(0xFFD93333),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 0,

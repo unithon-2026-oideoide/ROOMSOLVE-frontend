@@ -180,6 +180,12 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                                     ElevatedButton(
                                       onPressed: () => context.push('/landlord/auto-approval'),
                                       style: ElevatedButton.styleFrom(
+                                        // 앱 전역 테마의 minimumSize는 Size.fromHeight(47)
+                                        // (= 가로 무한대)라 전체 폭 버튼엔 맞지만, 이 버튼처럼
+                                        // Expanded 없이 Row 안에 놓이면 "BoxConstraints forces
+                                        // an infinite width" 레이아웃 예외로 앱이 죽는다.
+                                        // 여기서 명시적으로 덮어써 내용물 크기만큼만 차지하게 한다.
+                                        minimumSize: Size.zero,
                                         backgroundColor: AppColors.brandLight,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                                         elevation: 0,
