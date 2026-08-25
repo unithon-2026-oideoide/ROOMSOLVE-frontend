@@ -7,7 +7,7 @@ import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/status_filter_row.dart';
+import '../../widgets/status_filter_button.dart';
 
 /// "임대인 - 수리요청관리": 전체 수리 요청을 상태별로 묶어서 보여준다.
 class LandlordRequestsScreen extends StatefulWidget {
@@ -88,6 +88,13 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
       if (_filter != '전체' && _filter != group) continue;
       grouped[group]!.add(r);
     }
+    // 필터 시트에 보여줄 개수는 현재 _filter와 무관하게 항목별 전체 개수여야
+    // 한다 — 위 grouped는 이미 _filter로 걸러진 뒤라 그대로 쓰면 안 된다.
+    final counts = <String, int>{'전체': all.length, '승인 대기': 0, '수리 대기': 0, '완료': 0};
+    for (final r in all) {
+      final group = _statusGroup(r);
+      counts[group] = (counts[group] ?? 0) + 1;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -112,9 +119,11 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                           : [
                               Text('수리 요청 관리', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                               const SizedBox(height: 12),
-                              StatusFilterRow(
+                              StatusFilterButton(
+                                title: '상태',
                                 filters: const ['전체', '승인 대기', '수리 대기', '완료'],
                                 selected: _filter,
+                                counts: counts,
                                 onSelected: (f) => setState(() => _filter = f),
                               ),
                               const SizedBox(height: 20),

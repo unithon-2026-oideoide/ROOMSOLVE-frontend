@@ -8,7 +8,7 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/status_filter_row.dart';
+import '../../widgets/status_filter_button.dart';
 
 /// "신고 내역 화면"
 class ReportListScreen extends StatefulWidget {
@@ -79,6 +79,10 @@ class _ReportListScreenState extends State<ReportListScreen> {
   Widget build(BuildContext context) {
     final all = _reports ?? const [];
     final filtered = all.where((r) => _filter == '전체' || r.statusLabel == _filter).toList();
+    final counts = <String, int>{
+      '전체': all.length,
+      for (final f in _filters.skip(1)) f: all.where((r) => r.statusLabel == f).length,
+    };
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -107,9 +111,12 @@ class _ReportListScreenState extends State<ReportListScreen> {
                           : [
                               Text('신고 내역', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                               const SizedBox(height: 12),
-                              StatusFilterRow(
+                              StatusFilterButton(
+                                title: '상태',
                                 filters: _filters,
                                 selected: _filter,
+                                counts: counts,
+                                colorOf: (label) => label == '전체' ? AppColors.gray5 : _statusColor(label),
                                 onSelected: (f) => setState(() => _filter = f),
                               ),
                               const SizedBox(height: 12),
