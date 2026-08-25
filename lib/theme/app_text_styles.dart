@@ -76,6 +76,11 @@ class AppTextStyles {
   static TextStyle bodyRegular12({Color color = AppColors.gray6}) =>
       _base(fontSize: 12, fontWeight: FontWeight.w400, color: color);
 
+  // Body/Mobile : 12, SemiBold — 상태 배지처럼 작은 크기에서 굵기로 가독성을
+  // 올려야 하는 자리에 쓴다(Figma에 없던 조합이라 새로 추가).
+  static TextStyle bodySemiBold12({Color color = AppColors.gray6}) =>
+      _base(fontSize: 12, fontWeight: FontWeight.w600, color: color);
+
   // Button/Mobile : 14, Regular
   static TextStyle buttonRegular14({Color color = AppColors.white}) =>
       _base(fontSize: 14, fontWeight: FontWeight.w400, color: color);

@@ -61,14 +61,15 @@ class _ReportListScreenState extends State<ReportListScreen> {
   Color _statusColor(String label) {
     switch (label) {
       case '접수 완료':
-        return AppColors.accentGreen;
       case '수리 대기':
       case '승인됨':
         return AppColors.brandMain;
       case '거절됨':
         return AppColors.accentRed;
+      // 수리가 실제로 끝난 상태만 초록색으로 — 그 앞 단계(접수/대기)와
+      // 색으로 뚜렷하게 구분돼야 한눈에 "다 끝났다"는 걸 알 수 있다.
       case '완료':
-        return AppColors.gray5;
+        return AppColors.accentGreen;
       default:
         return AppColors.brandMain;
     }
@@ -175,7 +176,7 @@ class _ReportRow extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(999)),
-                  child: Text(statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                  child: Text(statusLabel, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                 ),
               ],
             ),
@@ -186,7 +187,7 @@ class _ReportRow extends StatelessWidget {
                 style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
               ),
             const SizedBox(height: 8),
-            Text(report.statusLabel, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
+            Text(report.statusLabel, style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
           ],
         ),
       ),
