@@ -33,6 +33,12 @@ class AppUser {
   final String? phone;
   final DateTime? createdAt;
   final UserRole role;
+  /// role이 landlord인 계정만 값이 있다. 회원가입 시 서버가 자동 발급하는 6자리
+  /// 초대 코드 — 세입자가 이 코드를 입력해 자신과 연결한다(PATCH /api/users/link-landlord).
+  final String? landlordCode;
+  /// 이 사용자가 초대 코드로 연결한 임대인의 id. null이면 아직 연결되지 않은
+  /// 상태다 — 이 경우 신고 접수(POST /api/reports)가 landlord_id 없이는 실패한다.
+  final String? linkedLandlordId;
 
   AppUser({
     required this.id,
@@ -41,6 +47,8 @@ class AppUser {
     this.phone,
     this.createdAt,
     required this.role,
+    this.landlordCode,
+    this.linkedLandlordId,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -52,6 +60,8 @@ class AppUser {
       phone: json['phone']?.toString(),
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
       role: userRoleFromString(json['role']?.toString()),
+      landlordCode: json['landlord_code']?.toString(),
+      linkedLandlordId: json['linked_landlord_id']?.toString(),
     );
   }
 
@@ -63,10 +73,12 @@ class AppUser {
       'phone': phone,
       'created_at': createdAt?.toIso8601String(),
       'role': userRoleToString(role),
+      'landlord_code': landlordCode,
+      'linked_landlord_id': linkedLandlordId,
     };
   }
 
-  AppUser copyWith({UserRole? role}) {
+  AppUser copyWith({UserRole? role, String? landlordCode, String? linkedLandlordId}) {
     return AppUser(
       id: id,
       email: email,
@@ -74,6 +86,8 @@ class AppUser {
       phone: phone,
       createdAt: createdAt,
       role: role ?? this.role,
+      landlordCode: landlordCode ?? this.landlordCode,
+      linkedLandlordId: linkedLandlordId ?? this.linkedLandlordId,
     );
   }
 }

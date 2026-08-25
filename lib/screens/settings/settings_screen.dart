@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/role_routes.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -17,7 +18,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final role = context.watch<AuthProvider>().role;
+    final auth = context.watch<AuthProvider>();
+    final role = auth.role;
+    final linked = auth.currentUser?.linkedLandlordId != null;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -42,16 +45,18 @@ class SettingsScreen extends StatelessWidget {
                   Text('서비스 설정', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
                   const SizedBox(height: 8),
                   _SettingsRow(
-                    title: '사용자 유형 변경',
-                    subtitle: '현재: ${roleLabel(role)}',
-                    onTap: () => context.push('/settings/role'),
-                  ),
-                  const SizedBox(height: 8),
-                  _SettingsRow(
                     title: '알림 설정',
                     subtitle: '수리 진행 알림 켜짐',
                     onTap: () => context.push('/settings/notifications'),
                   ),
+                  if (role == UserRole.tenant) ...[
+                    const SizedBox(height: 8),
+                    _SettingsRow(
+                      title: '임대인 연결',
+                      subtitle: linked ? '연결됨' : '연결된 임대인 없음 — 신고 접수를 위해 필요',
+                      onTap: () => context.push('/settings/landlord-link'),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Text('계정 관리', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
                   const SizedBox(height: 8),

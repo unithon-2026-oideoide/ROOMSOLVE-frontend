@@ -27,12 +27,16 @@ class AuthProvider extends ChangeNotifier {
         final id = await AuthStorage.instance.readUserId();
         final name = await AuthStorage.instance.readName();
         final phone = await AuthStorage.instance.readPhone();
+        final landlordCode = await AuthStorage.instance.readLandlordCode();
+        final linkedLandlordId = await AuthStorage.instance.readLinkedLandlordId();
         _currentUser = AppUser(
           id: id ?? '',
           email: '',
           name: name,
           phone: phone,
           role: userRoleFromString(roleString),
+          landlordCode: landlordCode,
+          linkedLandlordId: linkedLandlordId,
         );
       }
     } catch (_) {
@@ -52,13 +56,24 @@ class AuthProvider extends ChangeNotifier {
 
   /// 회원가입. 이메일 인증이 필요한 계정이면(session이 null) 로그인 상태로
   /// 취급하지 않고 예외를 던진다 — 화면에서 "이메일을 확인해주세요" 안내로 쓰인다.
+  ///
+  /// role이 technician이면 businessNumber/categories가 추가로 필요하다.
   Future<void> signup({
     required String email,
     required String password,
     required String name,
     required UserRole role,
+    String? businessNumber,
+    List<String>? categories,
   }) async {
-    final result = await AuthService.instance.signup(email: email, password: password, name: name, role: role);
+    final result = await AuthService.instance.signup(
+      email: email,
+      password: password,
+      name: name,
+      role: role,
+      businessNumber: businessNumber,
+      categories: categories,
+    );
     if (!result.hasSession) {
       throw ApiException('가입 확인 이메일을 보냈습니다. 메일함에서 인증 링크를 확인한 뒤 로그인해주세요.');
     }
@@ -66,15 +81,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 사용자 유형 변경 화면에서 호출된다. PATCH /api/users/{id}/role를 호출해
-  /// 서버에 반영한 뒤 로컬 상태를 갱신한다.
-  Future<void> updateRole(UserRole role) async {
-    final current = _currentUser;
-    if (current == null || current.id.isEmpty) {
-      throw ApiException('사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.');
-    }
-    final user = await AuthService.instance.updateRole(userId: current.id, role: role);
-    _currentUser = user;
+  /// 임대인 초대 코드로 현재 로그인한 사용자를 연결한다(설정 > 임대인 연결,
+  /// 또는 세입자 회원가입 시 선택 입력). 응답에는 users row 전체가 오지만,
+  /// 로그인 세션에만 있는 email 등을 잃지 않도록 linkedLandlordId만 갈아끼운다.
+  Future<void> linkLandlord(String code) async {
+    final updated = await AuthService.instance.linkLandlord(code);
+    _currentUser = _currentUser?.copyWith(linkedLandlordId: updated.linkedLandlordId) ?? updated;
     notifyListeners();
   }
 

@@ -33,41 +33,45 @@ class ReportService {
     return Report.fromJson(data['report'] as Map<String, dynamic>);
   }
 
-  /// 신고를 실제로 저장한다(POST /api/reports). 백엔드가 `landlord_id`를 필수로
-  /// 요구하는데, 세입자와 임대인을 연결해 주는 테이블/조회 경로가 아직 백엔드에
-  /// 없어(팀 README에도 명시된 알려진 gap) 프론트에서 landlord_id를 구할 방법이
-  /// 없다. 그래서 이 메서드는 아직 어떤 화면에서도 호출하지 않는다 — 지금
-  /// 신고 플로우는 [analyzeReport]까지만 쓰고, 저장 없이 결과를 보여준다.
-  /// landlord_id를 얻는 방법이 정해지면 여기서 필수 파라미터로 받아 채워야 한다.
+  /// 신고를 실제로 저장한다(POST /api/reports). `landlordId`를 생략하면
+  /// 백엔드가 로그인한 세입자의 linked_landlord_id(설정 > 임대인 연결에서 임대인
+  /// 초대 코드를 입력해 저장된 값)를 대신 쓴다. 아직 어느 임대인과도 연결돼
+  /// 있지 않고 landlordId도 안 주면 서버가 400을 준다 — 그 메시지를 그대로
+  /// [ApiException]으로 화면에 보여주면 된다.
   Future<Report> createReport({
     required String description,
-    required String landlordId,
-    List<File> photos = const [],
-    void Function(int completed, int total)? onUploadProgress,
+    required List<String> photoUrls,
+    String? landlordId,
+    String? category,
+    String? severity,
+    String? recommendedPath,
+    String? selfFixGuide,
+    String? applianceType,
   }) async {
-    if (photos.isEmpty) {
-      throw ApiException('사진을 최소 1장 첨부해야 합니다.');
-    }
-    final photoUrls = await uploadPhotos(photos, onProgress: onUploadProgress);
     final response = await _api.post('/api/reports', data: {
-      'landlord_id': landlordId,
+      'landlord_id': ?landlordId,
       'description': description,
       'photo_url': photoUrls.first,
       'photo_urls': photoUrls,
+      'category': ?category,
+      'severity': ?severity,
+      'recommended_path': ?recommendedPath,
+      'self_fix_guide': ?selfFixGuide,
+      'appliance_type': ?applianceType,
     });
     final data = response.data as Map<String, dynamic>;
     return Report.fromJson(data['report'] as Map<String, dynamic>);
   }
 
-  /// 사진 + 설명을 보내 AI 분석 결과(category/severity/recommended_path/self_fix_guide)를 받는다.
-  /// 사진은 먼저 /api/uploads로 한 장씩 업로드한 뒤, 받은 URL들을 photo_url(대표)/photo_urls(전체)로 전달한다.
+  /// 세입자의 신고 접수 플로우 전체(사진 업로드 → AI 분석 → DB 저장)를 한 번에
+  /// 처리한다. report_additional_info_screen이 "다음 단계로"에서 호출하는
+  /// 유일한 진입점이다.
   ///
-  /// 이 API는 분류만 하고 DB에 저장하지 않는다(백엔드 주석 참고) — 응답에
-  /// id/status/photo_urls가 없다. 화면에서 바로 쓸 수 있게, 방금 올린
-  /// photoUrls와 함께 로컬에서 Report 객체를 만들어 반환한다. id가 비어 있으므로
-  /// 이 Report를 갖고 하는 후속 API 호출(수리 진행 현황 등)은 데이터가 없을 뿐
-  /// 에러로 죽지는 않는다.
-  Future<Report> analyzeReport({
+  /// landlord_id는 보내지 않는다 — createReport가 서버 쪽 linked_landlord_id로
+  /// 채우게 둔다. 아직 임대인과 연결돼 있지 않으면 createReport 단계에서
+  /// ApiException이 던져지는데, 메시지에 "설정에서 임대인 초대 코드를 먼저
+  /// 입력"하라는 안내가 포함되어 있어 화면에 그대로 보여주면 된다.
+  Future<Report> submitReport({
     required String description,
     List<File> photos = const [],
     void Function(int completed, int total)? onUploadProgress,
@@ -76,21 +80,22 @@ class ReportService {
       throw ApiException('사진을 최소 1장 첨부해야 합니다.');
     }
     final photoUrls = await uploadPhotos(photos, onProgress: onUploadProgress);
-    final response = await _api.post('/api/reports/analyze', data: {
+
+    final analyzeResponse = await _api.post('/api/reports/analyze', data: {
       'description': description,
       'photo_url': photoUrls.first,
       'photo_urls': photoUrls,
     });
-    final data = response.data as Map<String, dynamic>;
-    return Report(
-      id: '',
+    final analysis = analyzeResponse.data as Map<String, dynamic>;
+
+    return createReport(
       description: description,
-      photoUrl: photoUrls.first,
       photoUrls: photoUrls,
-      category: data['category']?.toString(),
-      severity: data['severity']?.toString(),
-      recommendedPath: recommendedPathFromString(data['recommended_path']?.toString()),
-      selfFixGuide: data['self_fix_guide']?.toString(),
+      category: analysis['category']?.toString(),
+      severity: analysis['severity']?.toString(),
+      recommendedPath: analysis['recommended_path']?.toString(),
+      selfFixGuide: analysis['self_fix_guide']?.toString(),
+      applianceType: analysis['appliance_type']?.toString(),
     );
   }
 

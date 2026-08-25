@@ -68,13 +68,13 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
     ];
 
     try {
-      final Report result = await ReportService.instance.analyzeReport(
+      final Report result = await ReportService.instance.submitReport(
         description: detailLines.join('\n'),
         photos: allPhotos,
         onUploadProgress: (completed, total) {
           if (!mounted) return;
           setState(() {
-            _statusMessage = completed >= total ? 'AI 분석 중...' : '사진 업로드 중... ($completed/$total)';
+            _statusMessage = completed >= total ? 'AI 분석 및 신고 접수 중...' : '사진 업로드 중... ($completed/$total)';
           });
         },
       );
