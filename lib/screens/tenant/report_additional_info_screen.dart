@@ -267,19 +267,30 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('이전 수리 이력', style: AppTextStyles.bodyRegular16(color: const Color(0xFF212121))),
-                          const SizedBox(height: 8),
-                          RadioGroup<bool>(
-                            groupValue: _hasPriorRepair,
-                            onChanged: (v) => setState(() => _hasPriorRepair = v!),
-                            child: Row(
-                              children: [
-                                Radio<bool>(value: true, activeColor: AppColors.brandMain),
-                                Text('있음', style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121))),
-                                const SizedBox(width: 24),
-                                Radio<bool>(value: false, activeColor: AppColors.brandMain),
-                                Text('없음', style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121))),
-                              ],
-                            ),
+                          const SizedBox(height: 10),
+                          // 예전엔 RadioGroup + Radio 두 개였다. Flutter 버전에 따라
+                          // RadioGroup(그룹핑을 부모 위젯 하나로 옮긴 비교적 최근 API)이
+                          // 없는 SDK도 있어 IDE에 따라 에러로 보일 수 있고, 어차피 이
+                          // 화면의 다른 단일 선택 필드(문제 발생 시점 등)와도 스타일이
+                          // 달랐다. 같은 _OptionChip으로 통일했다.
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _OptionChip(
+                                  label: '있음',
+                                  selected: _hasPriorRepair,
+                                  onTap: () => setState(() => _hasPriorRepair = true),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _OptionChip(
+                                  label: '없음',
+                                  selected: !_hasPriorRepair,
+                                  onTap: () => setState(() => _hasPriorRepair = false),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -389,12 +400,14 @@ class _OptionChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.brandMain : AppColors.gray1,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
           style: AppTextStyles.bodyRegular14(color: selected ? AppColors.white : AppColors.gray7),
         ),
       ),
