@@ -95,7 +95,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 // Flutter 렌더링 엔진이 '!semantics.parentDataDirty' assertion으로
                 // 죽는 경우가 있어, 로딩 스피너도 ListView 안의 아이템으로 둔다.
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
                   children: _isLoading
                       ? const [
                           SizedBox(height: 120),

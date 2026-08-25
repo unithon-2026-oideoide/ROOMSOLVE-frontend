@@ -59,7 +59,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
               child: RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
                   children: [
                     RichText(
                       text: TextSpan(

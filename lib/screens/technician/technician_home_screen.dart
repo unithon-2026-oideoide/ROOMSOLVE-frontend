@@ -103,7 +103,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               child: RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
                   children: [
                     RichText(
                       text: TextSpan(
