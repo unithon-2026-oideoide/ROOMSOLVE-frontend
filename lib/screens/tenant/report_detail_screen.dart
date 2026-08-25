@@ -39,7 +39,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   @override
   void initState() {
     super.initState();
-    final isAppliance = widget.report.category == 'appliance' || widget.report.recommendedPath == 'manufacturer_as';
+    final isAppliance = widget.report.category == 'appliance' || widget.report.recommendedPath == RecommendedPath.manufacturerAs;
     if (isAppliance) {
       _loadAsInfo();
       _isLoadingTimeline = false;
@@ -139,7 +139,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final report = widget.report;
-    final isAppliance = report.category == 'appliance' || report.recommendedPath == 'manufacturer_as';
+    final isAppliance = report.category == 'appliance' || report.recommendedPath == RecommendedPath.manufacturerAs;
     final rejected = report.isRejected;
     final badgeLabel = rejected
         ? '거절됨'
