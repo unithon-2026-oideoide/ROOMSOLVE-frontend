@@ -12,7 +12,7 @@ import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
 /// "수리기사 홈 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
-/// 일정을 가져온다. 배정된 일정이 없으면 [mockTechnicianJobs]로 대체한다.
+/// 일정을 가져온다. 배정된 일정이 없으면 빈 상태 안내를 보여준다.
 class TechnicianHomeScreen extends StatefulWidget {
   const TechnicianHomeScreen({super.key});
 
@@ -22,7 +22,6 @@ class TechnicianHomeScreen extends StatefulWidget {
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   List<TechnicianJob>? _jobs;
-  bool _isMock = false;
   String? _errorMessage;
 
   @override
@@ -34,14 +33,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   Future<void> _load() async {
     final userId = context.read<AuthProvider>().currentUser?.id;
     try {
-      final result = await loadTechnicianJobs(userId);
-      if (mounted) {
-        setState(() {
-          _jobs = result.jobs;
-          _isMock = result.isMock;
-          _errorMessage = null;
-        });
-      }
+      final jobs = await loadTechnicianJobs(userId);
+      if (mounted) setState(() { _jobs = jobs; _errorMessage = null; });
     } on ApiException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
     } catch (e) {
@@ -108,98 +101,103 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           children: [
             const AppTopBar(),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: AppTextStyles.titleBold30(color: AppColors.black),
-                      children: [
-                        const TextSpan(text: '안녕하세요, '),
-                        TextSpan(text: userName, style: AppTextStyles.titleBold30(color: AppColors.brandMain)),
-                        const TextSpan(text: '님'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('오늘의 작업', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-                      TextButton(
-                        onPressed: () => context.push('/settings'),
-                        child: Text('설정', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
-                      ),
-                    ],
-                  ),
-                  if (_isMock) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '아직 실제 배정이 없어 예시 데이터를 보여드립니다.',
-                      style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('배정된 작업', style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
-                              Text('${jobs.length}건', style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(child: _CountTile(label: '완료', count: completed)),
-                            const SizedBox(width: 8),
-                            Expanded(child: _CountTile(label: '진행 중', count: inProgress)),
-                            const SizedBox(width: 8),
-                            Expanded(child: _CountTile(label: '대기', count: waiting)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('방문 일정', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
-                  const SizedBox(height: 12),
-                  for (final job in schedule) ...[
-                    _ScheduleCard(job: job, onTap: () => context.push('/technician/jobs/${job.id}', extra: job)),
-                    const SizedBox(height: 12),
-                  ],
-                  GestureDetector(
-                    onTap: () => context.push('/technician/jobs'),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [BoxShadow(color: Color(0x0F000000), offset: Offset(0, 2), blurRadius: 8)],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: AppTextStyles.titleBold30(color: AppColors.black),
                         children: [
-                          Text('배정 작업 목록 전체 보기', style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
-                          const Icon(Icons.arrow_forward, size: 18, color: AppColors.gray8),
+                          const TextSpan(text: '안녕하세요, '),
+                          TextSpan(text: userName, style: AppTextStyles.titleBold30(color: AppColors.brandMain)),
+                          const TextSpan(text: '님'),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('오늘의 작업', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                        TextButton(
+                          onPressed: () => context.push('/settings'),
+                          child: Text('설정', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('배정된 작업', style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
+                                Text('${jobs.length}건', style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(child: _CountTile(label: '완료', count: completed)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _CountTile(label: '진행 중', count: inProgress)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _CountTile(label: '대기', count: waiting)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('방문 일정', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+                    const SizedBox(height: 12),
+                    if (schedule.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text('예정된 방문 일정이 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+                        ),
+                      )
+                    else
+                      for (final job in schedule) ...[
+                        _ScheduleCard(job: job, onTap: () => context.push('/technician/jobs/${job.id}', extra: job)),
+                        const SizedBox(height: 12),
+                      ],
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => context.push('/technician/jobs'),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: const [BoxShadow(color: Color(0x0F000000), offset: Offset(0, 2), blurRadius: 8)],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('배정 작업 목록 전체 보기', style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
+                            const Icon(Icons.arrow_forward, size: 18, color: AppColors.gray8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const AppBottomNav(current: AppBottomNavTab.home, homePath: '/technician', reportsPath: '/technician/jobs'),
@@ -288,6 +286,10 @@ class _ScheduleCard extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
+              clipBehavior: Clip.antiAlias,
+              child: (job.photoUrl != null && job.photoUrl!.isNotEmpty)
+                  ? Image.network(job.photoUrl!, width: 64, height: 64, fit: BoxFit.cover)
+                  : const Center(child: Icon(Icons.build_outlined, color: AppColors.gray6, size: 24)),
             ),
           ],
         ),

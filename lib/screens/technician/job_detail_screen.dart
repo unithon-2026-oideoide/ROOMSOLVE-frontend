@@ -82,13 +82,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   /// 배정 목록을 다시 불러와 이 작업의 최신 상태로 _job을 교체한다. 실패해도
-  /// 방금 제출 자체는 이미 성공했으니 화면은 기존 _job으로 그대로 둔다 —
-  /// loadTechnicianJobs가 실패 시 돌려주는 mockTechnicianJobs의 id는 실제
-  /// UUID와 절대 겹치지 않으므로, 못 찾으면 조용히 넘어가도 안전하다.
+  /// 방금 제출 자체는 이미 성공했으니 화면은 기존 _job으로 그대로 둔다.
   Future<void> _refreshJob(String technicianId) async {
     try {
-      final result = await loadTechnicianJobs(technicianId);
-      final updated = result.jobs.where((j) => j.id == _job.id);
+      final jobs = await loadTechnicianJobs(technicianId);
+      final updated = jobs.where((j) => j.id == _job.id);
       if (mounted && updated.isNotEmpty) setState(() => _job = updated.first);
     } catch (_) {
       // 갱신 실패는 무시 — 위 주석 참고.
@@ -143,11 +141,27 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         children: [
                           Text(job.symptomDescription, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
                           const SizedBox(height: 8),
-                          Container(
-                            height: 160,
-                            width: double.infinity,
-                            decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
-                          ),
+                          if (job.photoUrls.isNotEmpty)
+                            for (final url in job.photoUrls)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(url, height: 160, width: double.infinity, fit: BoxFit.cover),
+                                ),
+                              )
+                          else if (job.photoUrl != null && job.photoUrl!.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(job.photoUrl!, height: 160, width: double.infinity, fit: BoxFit.cover),
+                            )
+                          else
+                            Container(
+                              height: 160,
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: const Color(0xFFE5E5EB), borderRadius: BorderRadius.circular(8)),
+                              child: const Center(child: Text('첨부 사진 없음', style: TextStyle(color: AppColors.gray6))),
+                            ),
                         ],
                       ),
                     ),

@@ -1,8 +1,5 @@
 /// GET /api/repair/schedule(technicianId=)와 GET /api/reports/{id}를 조합해
-/// 화면에 필요한 형태로 만든다. 백엔드 Report/RepairSchedule에는 위치, 세입자
-/// 연락처, 작업 지시 같은 필드가 없어 해당 항목은 빈 값으로 둔다(화면에서
-/// "정보 없음"으로 표시). 실제 배정 일정이 하나도 없을 때만 [mockTechnicianJobs]로
-/// 대체해 화면이 비어 보이지 않게 한다.
+/// 화면에 필요한 형태로 만든다.
 import '../core/category_helpers.dart';
 
 enum TechnicianJobStatus { scheduled, inProgress, onHold, completed }
@@ -24,6 +21,8 @@ class TechnicianJob {
     this.estimatedCost,
     this.actualCost,
     this.scheduleId,
+    this.photoUrl,
+    this.photoUrls = const [],
   });
 
   final String id;
@@ -40,8 +39,10 @@ class TechnicianJob {
   final String receivedAt;
   final String? estimatedCost;
   final String? actualCost;
-  /// 실제 RepairSchedule 항목의 id (PATCH .../confirm에 필요). 목업 데이터는 null.
+  /// 실제 RepairSchedule 항목의 id (PATCH .../confirm에 필요).
   final String? scheduleId;
+  final String? photoUrl;
+  final List<String> photoUrls;
 
   String get statusLabel {
     switch (status) {
@@ -71,9 +72,31 @@ class TechnicianJob {
     }
   }
 
-  static TechnicianJobStatus _resolveStatus({required bool confirmed, required String? reportStatus}) {
-    if (reportStatus == 'done' || reportStatus == 'completed' || reportStatus == '완료') {
+  static TechnicianJobStatus _resolveStatus({
+    required bool confirmed,
+    required String? reportStatus,
+    String? currentRepairStatus,
+  }) {
+    final timeline = currentRepairStatus?.toLowerCase();
+    if (timeline == 'done' || timeline == 'completed' || timeline == '완료') {
       return TechnicianJobStatus.completed;
+    }
+    if (timeline == 'in_progress' || timeline == '진행' || timeline == '진행 중') {
+      return TechnicianJobStatus.inProgress;
+    }
+    if (timeline == 'confirmed') {
+      return TechnicianJobStatus.inProgress;
+    }
+    if (timeline == 'scheduled') {
+      return TechnicianJobStatus.scheduled;
+    }
+
+    final report = reportStatus?.toLowerCase();
+    if (report == 'done' || report == 'completed' || report == '완료') {
+      return TechnicianJobStatus.completed;
+    }
+    if (report == 'in_progress') {
+      return TechnicianJobStatus.inProgress;
     }
     return confirmed ? TechnicianJobStatus.inProgress : TechnicianJobStatus.scheduled;
   }
@@ -88,7 +111,8 @@ class TechnicianJob {
   }
 
   static String _formatReceivedAt(String? isoString) {
-    final dt = isoString != null ? DateTime.tryParse(isoString)?.toLocal() : null;
+    if (isoString == null) return '날짜 미상';
+    final dt = DateTime.tryParse(isoString)?.toLocal();
     if (dt == null) return '날짜 미상';
     return '${dt.year}년 ${dt.month}월 ${dt.day}일';
   }
@@ -96,86 +120,41 @@ class TechnicianJob {
   factory TechnicianJob.fromApi({
     required Map<String, dynamic> schedule,
     required Map<String, dynamic> report,
+    String? currentRepairStatus,
   }) {
     final confirmed = schedule['confirmed'] == true;
+    final photoUrl = report['photo_url']?.toString() ?? schedule['photo_url']?.toString();
+    final rawPhotoUrls = report['photo_urls'] ?? schedule['photo_urls'];
+    final photoUrls = (rawPhotoUrls is List)
+        ? rawPhotoUrls.map((e) => e.toString()).toList()
+        : (photoUrl != null ? [photoUrl] : <String>[]);
+
+    final tenant = (report['tenant'] is Map) ? (report['tenant'] as Map) : null;
+    final tenantName = tenant?['name']?.toString() ?? report['tenant_name']?.toString() ?? '';
+    final tenantPhone = tenant?['phone']?.toString() ?? report['tenant_phone']?.toString() ?? '';
+    final unit = report['unit']?.toString() ?? '';
+    final address = report['address']?.toString() ?? '';
+
     return TechnicianJob(
-      id: report['id']?.toString() ?? '',
+      id: report['id']?.toString() ?? schedule['report_id']?.toString() ?? '',
       title: formatReportTitle(report['category']?.toString(), report['description']?.toString()),
-      unit: '',
-      tenantName: '',
-      address: '',
+      unit: unit,
+      tenantName: tenantName,
+      address: address,
       visitTime: _formatVisitTime(schedule['scheduled_at']?.toString()),
       priority: _severityToPriority(report['severity']?.toString()),
-      status: _resolveStatus(confirmed: confirmed, reportStatus: report['status']?.toString()),
+      status: _resolveStatus(
+        confirmed: confirmed,
+        reportStatus: report['status']?.toString(),
+        currentRepairStatus: currentRepairStatus,
+      ),
       symptomDescription: report['description']?.toString() ?? '증상 설명이 없습니다.',
-      instruction: '작업 지시 정보가 아직 제공되지 않습니다.',
-      contactPhone: '연락처 정보 없음',
-      receivedAt: _formatReceivedAt(report['created_at']?.toString()),
+      instruction: report['self_fix_guide']?.toString() ?? '작업 지시 정보가 아직 제공되지 않습니다.',
+      contactPhone: tenantPhone.isNotEmpty ? tenantPhone : '연락처 정보 없음',
+      receivedAt: _formatReceivedAt(report['created_at']?.toString() ?? schedule['created_at']?.toString()),
       scheduleId: schedule['id']?.toString(),
+      photoUrl: photoUrl,
+      photoUrls: photoUrls,
     );
   }
 }
-
-const mockTechnicianJobs = [
-  TechnicianJob(
-    id: 'job-1',
-    title: '욕실 누수 수리',
-    unit: '101호',
-    tenantName: '김세입자',
-    address: '서울 마포구 서교동 123',
-    visitTime: '오전 10:00',
-    priority: '긴급',
-    status: TechnicianJobStatus.scheduled,
-    symptomDescription: '욕실 세면대 하부에서 물이 계속 새고 있습니다.',
-    instruction: '배관 연결부 점검 후 필요시 부품 교체. 교체가 필요한 경우 사전 승인 요청 필수.',
-    contactPhone: '010-0000-0001',
-    receivedAt: '2025년 6월 3일',
-    estimatedCost: '150,000원',
-  ),
-  TechnicianJob(
-    id: 'job-2',
-    title: '보일러 점검 및 교체',
-    unit: '105호',
-    tenantName: '최세입자',
-    address: '서울 은평구 불광동 45',
-    visitTime: '오후 1:30',
-    priority: '일반',
-    status: TechnicianJobStatus.scheduled,
-    symptomDescription: '보일러가 작동하지 않고 온수가 나오지 않습니다.',
-    instruction: '보일러 점화 계통 점검 후 상태 보고.',
-    contactPhone: '010-0000-0002',
-    receivedAt: '2025년 6월 2일',
-    estimatedCost: '200,000원',
-  ),
-  TechnicianJob(
-    id: 'job-3',
-    title: '거실 전기 콘센트 불량',
-    unit: '203호',
-    tenantName: '이세입자',
-    address: '서울 서대문구 홍제동 78',
-    visitTime: '오후 4:00',
-    priority: '낮음',
-    status: TechnicianJobStatus.inProgress,
-    symptomDescription: '거실 콘센트에 전원이 들어오지 않습니다.',
-    instruction: '배선 및 차단기 점검.',
-    contactPhone: '010-0000-0003',
-    receivedAt: '2025년 6월 1일',
-    estimatedCost: '80,000원',
-    actualCost: '80,000원',
-  ),
-  TechnicianJob(
-    id: 'job-4',
-    title: '주방 배수관 막힘',
-    unit: '401호',
-    tenantName: '정세입자',
-    address: '서울 마포구 연남동 12',
-    visitTime: '일정 미정',
-    priority: '부품 대기',
-    status: TechnicianJobStatus.onHold,
-    symptomDescription: '주방 싱크대 배수구에서 물이 내려가지 않고 역류합니다. 악취도 동반됩니다.',
-    instruction: '배수관 내부 이물질 제거 후 상태 점검. 교체 필요 부품 입고 대기 중.',
-    contactPhone: '010-0000-0004',
-    receivedAt: '2025년 5월 30일',
-    estimatedCost: '120,000원',
-  ),
-];

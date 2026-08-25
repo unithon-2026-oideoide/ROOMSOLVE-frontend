@@ -2,52 +2,75 @@ import '../models/technician_job.dart';
 import 'repair_service.dart';
 import 'report_service.dart';
 
-/// 진짜 배정 데이터가 없어([mockTechnicianJobs]로 대체됐는지) 화면이 구분할 수
-/// 있게 [isMock] 플래그를 함께 준다.
-typedef TechnicianJobsResult = ({List<TechnicianJob> jobs, bool isMock});
-
 /// GET /api/repair/schedule?technicianId=로 배정된 일정을 가져오고, 각 일정의
-/// report_id로 GET /api/reports/{id}를 호출해 상세를 조합한다.
+/// report_id로 상세 정보(및 repair_status_timeline의 현재 상태)를 조합한다.
 ///
-/// technicianId가 없거나(로그인 안 됨) 배정이 정말 하나도 없으면(신규 계정 등)
-/// isMock=true와 함께 [mockTechnicianJobs]로 대체해 화면이 비어 보이지 않게
-/// 한다 — 이건 정상적인 빈 상태다.
+/// 배정된 일정이 없으면 빈 리스트를 반환한다 — 예전에는 이 경우
+/// mockTechnicianJobs로 대체해서, 신규 계정이든 조회 실패든 항상 그럴싸한
+/// 가짜 배정 목록(가짜 연락처 포함)이 보이는 문제가 있었다. 지금은 진짜
+/// 데이터가 없으면 화면이 빈 상태를 있는 그대로 보여준다(각 화면의 "배정된
+/// 방문 일정이 없습니다" 등 안내 참고).
 ///
-/// 반대로 GET /api/repair/schedule 자체가 실패하면(네트워크/서버 오류)
-/// 그 예외를 그대로 던진다. 예전에는 이 경우도 조용히 mock으로 대체했는데,
-/// 그러면 서버가 500을 내도 기사가 (가짜 연락처가 포함된) 완전히 허구인
-/// 목업 배정 목록을 실제 데이터로 착각할 수 있었다 — 에러와 "배정 없음"은
-/// 화면에서 다르게 다뤄야 한다.
-Future<TechnicianJobsResult> loadTechnicianJobs(String? technicianId) async {
-  if (technicianId == null || technicianId.isEmpty) {
-    return (jobs: mockTechnicianJobs, isMock: true);
-  }
+/// technicianId가 없으면(로그인 안 됨) 빈 리스트를 반환한다. 반면
+/// GET /api/repair/schedule 자체가 실패하면(네트워크/서버 오류) 그 예외를
+/// 그대로 던진다 — "배정 없음"과 "조회 실패"를 화면에서 다르게 보여줘야
+/// 하기 때문이다(뭉뚱그려 빈 리스트로 처리하면 오류가 조용히 사라진다).
+Future<List<TechnicianJob>> loadTechnicianJobs(String? technicianId) async {
+  if (technicianId == null || technicianId.isEmpty) return [];
 
   final schedules = await RepairService.instance.getSchedules(technicianId: technicianId);
-  if (schedules.isEmpty) return (jobs: mockTechnicianJobs, isMock: true);
+  if (schedules.isEmpty) return [];
 
   final jobs = await Future.wait(schedules.map((schedule) async {
     final reportId = schedule['report_id']?.toString();
     if (reportId == null) return null;
+
+    String? currentRepairStatus;
+    try {
+      final timelineData = await RepairService.instance.getTimeline(reportId);
+      currentRepairStatus = timelineData.currentStatus;
+    } catch (_) {
+      // 타임라인 조회 실패는 무시한다 — 상태 표시가 조금 덜 정확해질 뿐,
+      // 작업 자체는 여전히 보여줘야 한다.
+    }
+
+    Map<String, dynamic> reportMap = {};
     try {
       final report = await ReportService.instance.getReport(reportId);
-      return TechnicianJob.fromApi(
-        schedule: schedule,
-        report: {
-          'id': report.id,
-          'category': report.category,
-          'description': report.description,
-          'severity': report.severity,
-          'status': report.status,
-          'created_at': report.createdAt?.toIso8601String(),
-        },
-      );
+      reportMap = {
+        'id': report.id,
+        'category': report.category,
+        'description': report.description,
+        'severity': report.severity,
+        'status': report.status,
+        'photo_url': report.photoUrl,
+        'photo_urls': report.photoUrls,
+        'created_at': report.createdAt?.toIso8601String(),
+      };
     } catch (_) {
-      // 이 건 하나의 상세 조회만 실패한 것 — 나머지 배정까지 통째로 버리지 않는다.
-      return null;
+      // 리포트 상세 조회가 실패해도 일정(schedule)에 딸려온 정보가 있으면 그걸 쓴다.
+      if (schedule['report'] is Map) {
+        reportMap = Map<String, dynamic>.from(schedule['report'] as Map);
+      }
     }
+
+    return TechnicianJob.fromApi(
+      schedule: schedule,
+      report: reportMap.isNotEmpty
+          ? reportMap
+          : {
+              'id': reportId,
+              'category': schedule['category'],
+              'description': schedule['description'],
+              'severity': schedule['severity'],
+              'status': schedule['status'],
+              'photo_url': schedule['photo_url'],
+              'photo_urls': schedule['photo_urls'],
+              'created_at': schedule['created_at'] ?? schedule['scheduled_at'],
+            },
+      currentRepairStatus: currentRepairStatus,
+    );
   }));
 
-  final result = jobs.whereType<TechnicianJob>().toList();
-  return result.isEmpty ? (jobs: mockTechnicianJobs, isMock: true) : (jobs: result, isMock: false);
+  return jobs.whereType<TechnicianJob>().toList();
 }
