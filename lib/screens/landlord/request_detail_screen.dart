@@ -176,8 +176,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             child: Column(
               children: [
                 _KeyValueRow('요청 번호', d['id']?.toString() ?? widget.requestId),
-                _KeyValueRow('신고 일시', d['createdAt']?.toString() ?? '-'),
-                _KeyValueRow('위치', d['unit']?.toString() ?? d['location']?.toString() ?? '-'),
+                _KeyValueRow('신고 일시', d['created_at']?.toString() ?? '-'),
+                _KeyValueRow('세입자', (d['tenant'] as Map?)?['name']?.toString() ?? '-'),
+                _KeyValueRow('세입자 연락처', (d['tenant'] as Map?)?['phone']?.toString() ?? '-'),
                 _KeyValueRow('유형', d['category']?.toString() ?? '-'),
               ],
             ),
@@ -189,18 +190,18 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  d['aiSummary']?.toString() ?? d['description']?.toString() ?? '분석 정보가 없습니다.',
+                  d['self_fix_guide']?.toString() ?? d['description']?.toString() ?? '분석 정보가 없습니다.',
                   style: AppTextStyles.bodyRegular14(color: AppColors.gray7),
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _Chip(text: '비용 부담: ${d['costBearer']?.toString() ?? '임대인'}'),
-                    if (d['highCost'] == true) const _Chip(text: '고비용 가능성'),
-                  ],
-                ),
+                if (d['severity'] != null)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _Chip(text: '긴급도: ${d['severity']}'),
+                    ],
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   '※ 위 판단은 AI 분석 결과이며 현장 확인 후 변경될 수 있습니다.',
@@ -210,21 +211,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _Card(
-            title: '비용 및 업체 정보',
-            child: Column(
-              children: [
-                _KeyValueRow('예상 수리 비용', d['estimatedCost']?.toString() ?? '150,000원'),
-                _KeyValueRow('배정 업체', d['vendorName']?.toString() ?? '미배정'),
-                _KeyValueRow('업체 평점', d['vendorRating']?.toString() ?? '-'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if ((d['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
+          if ((d['photo_urls'] as List?)?.isNotEmpty ?? false) ...[
             Text('신고 첨부 사진', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
             const SizedBox(height: 8),
-            for (final url in (d['photoUrls'] as List)) ...[
+            for (final url in (d['photo_urls'] as List)) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(url.toString(), height: 180, width: double.infinity, fit: BoxFit.cover),

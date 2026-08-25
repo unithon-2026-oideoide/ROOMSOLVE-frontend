@@ -52,9 +52,12 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
     }
   }
 
+  // 백엔드 reports.status는 pending/approved/rejected 세 값만 준다
+  // (landlord.controller.ts approveRequest 확인함). rejected는 더 이상 처리할
+  // 게 없는 상태라 "완료" 그룹으로 묶는다.
   String _statusGroup(Map<String, dynamic> r) {
     final status = r['status']?.toString().toLowerCase() ?? '';
-    if (status.contains('완료') || status == 'completed' || status == 'done') return '완료';
+    if (status == 'rejected' || status.contains('완료') || status == 'completed' || status == 'done') return '완료';
     if (status.contains('진행') || status == 'in_progress' || status == 'approved') return '진행 중';
     return '승인 대기';
   }
