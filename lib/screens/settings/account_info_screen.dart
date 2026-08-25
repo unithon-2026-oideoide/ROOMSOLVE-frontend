@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/role_routes.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -45,6 +47,26 @@ class AccountInfoScreen extends StatelessWidget {
                           ? '${user!.createdAt!.year}년 ${user.createdAt!.month}월 ${user.createdAt!.day}일'
                           : '정보 없음',
                     ),
+                    if (auth.role == UserRole.landlord) ...[
+                      const SizedBox(height: 20),
+                      _Field(
+                        label: '임대인 초대 코드',
+                        value: user?.landlordCode ?? '코드가 아직 없습니다',
+                        onCopy: user?.landlordCode != null
+                            ? () {
+                                Clipboard.setData(ClipboardData(text: user!.landlordCode!));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('초대 코드를 복사했습니다.')),
+                                );
+                              }
+                            : null,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '세입자에게 이 코드를 전달하면, 설정 > 임대인 연결에서 입력해 연결할 수 있습니다.',
+                        style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     GestureDetector(
                       onTap: () => context.pop(),
@@ -77,9 +99,10 @@ class AccountInfoScreen extends StatelessWidget {
 }
 
 class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.value});
+  const _Field({required this.label, required this.value, this.onCopy});
   final String label;
   final String value;
+  final VoidCallback? onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +119,18 @@ class _Field extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             boxShadow: AppColors.dropShadow,
           ),
-          child: Text(value, style: AppTextStyles.bodyRegular16(color: AppColors.gray8)),
+          child: Row(
+            children: [
+              Expanded(child: Text(value, style: AppTextStyles.bodyRegular16(color: AppColors.gray8))),
+              if (onCopy != null)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.copy, size: 18, color: AppColors.gray6),
+                  onPressed: onCopy,
+                ),
+            ],
+          ),
         ),
       ],
     );

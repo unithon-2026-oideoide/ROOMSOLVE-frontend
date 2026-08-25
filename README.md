@@ -51,7 +51,7 @@ lib/
                              # 방문 일정, 수리 진행 현황, 신고 내역/상세
     landlord/                # 임대인: 대시보드, 요청 관리/상세(승인·거절), 방문 일정, 호실 관리, 자동 승인 설정
     technician/               # 수리기사: 홈, 배정 작업 목록, 작업 상세, 수리 완료 확인
-    settings/                 # 공용: 설정, 계정 정보, 사용자 유형 변경, 알림 설정
+    settings/                 # 공용: 설정, 계정 정보, 임대인 연결(세입자), 알림 설정
 ```
 
 ## 백엔드 연동
@@ -70,7 +70,7 @@ lib/
 ### 실제로 연결된 API
 
 - 인증: `POST /api/auth/login`, `POST /api/auth/signup`
-- 사용자: `PATCH /api/users/{id}/role` (사용자 유형 변경 화면)
+- 사용자: `PATCH /api/users/link-landlord` (설정 > 임대인 연결 화면, 세입자 회원가입 시 선택 입력)
 - 신고: `POST /api/reports`, `GET /api/reports`, `GET /api/reports/{id}`,
   `POST /api/reports/analyze`, `POST /api/uploads`
 - 자가수리 챗봇: `POST /api/reports/chat` (자가조치가이드 화면, 무상태 — 대화
@@ -134,9 +134,9 @@ landlord_service 등 호출과 에러 처리)은 그대로 두고 레이아웃/�
 | 신고 내역 화면 | `screens/tenant/report_list_screen.dart` | 완료 |
 | 신고 내역 상세 화면 | `screens/tenant/report_detail_screen.dart` | 완료 (타임라인은 `GET /api/repair/timeline` 실연동) |
 | 설정 화면 | `screens/settings/settings_screen.dart` | 완료 (로그아웃 버튼을 여기로 이동) |
-| 사용자 유형 변경 화면 | `screens/settings/role_change_screen.dart` | 완료 (`PATCH /api/users/{id}/role` 실연동) |
 | 알림 설정 화면 | `screens/settings/notification_settings_screen.dart` | 완료 (로컬 상태만) |
-| 계정 정보 화면 | `screens/settings/account_info_screen.dart` | 완료 |
+| 계정 정보 화면 | `screens/settings/account_info_screen.dart` | 완료 (임대인은 초대 코드도 함께 표시) |
+| 임대인 연결 화면 (세입자 전용) | `screens/settings/landlord_link_screen.dart` | 완료 (`PATCH /api/users/link-landlord` 실연동, 디자인 원본에는 없던 신규 화면) |
 
 ### 남은 작업
 

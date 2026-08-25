@@ -18,8 +18,8 @@ import 'screens/landlord/landlord_visit_schedule_screen.dart';
 import 'screens/landlord/request_detail_screen.dart';
 import 'screens/landlord/request_rejected_screen.dart';
 import 'screens/settings/account_info_screen.dart';
+import 'screens/settings/landlord_link_screen.dart';
 import 'screens/settings/notification_settings_screen.dart';
-import 'screens/settings/role_change_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/technician/job_detail_screen.dart';
 import 'screens/technician/repair_complete_screen.dart';
@@ -130,8 +130,8 @@ GoRouter buildRouter(AuthProvider authProvider) {
       // 공용 설정
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       GoRoute(path: '/settings/account', builder: (context, state) => const AccountInfoScreen()),
-      GoRoute(path: '/settings/role', builder: (context, state) => const RoleChangeScreen()),
       GoRoute(path: '/settings/notifications', builder: (context, state) => const NotificationSettingsScreen()),
+      GoRoute(path: '/settings/landlord-link', builder: (context, state) => const LandlordLinkScreen()),
     ],
   );
 }
