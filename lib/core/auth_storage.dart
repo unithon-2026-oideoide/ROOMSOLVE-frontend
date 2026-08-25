@@ -15,6 +15,7 @@ class AuthStorage {
   static const _phoneKey = 'user_phone';
   static const _landlordCodeKey = 'landlord_code';
   static const _linkedLandlordIdKey = 'linked_landlord_id';
+  static const _vendorIdKey = 'vendor_id';
 
   Future<void> saveAccessToken(String token) {
     return _storage.write(key: _accessTokenKey, value: token);
@@ -84,6 +85,17 @@ class AuthStorage {
     return _storage.read(key: _linkedLandlordIdKey);
   }
 
+  /// role이 technician인 사용자만 값이 있다. vendors.id — users.id와 다른 값이며
+  /// quotes.vendor_id / GET /api/vendors/requests의 vendorId에 필요하다.
+  Future<void> saveVendorId(String? vendorId) {
+    if (vendorId == null) return _storage.delete(key: _vendorIdKey);
+    return _storage.write(key: _vendorIdKey, value: vendorId);
+  }
+
+  Future<String?> readVendorId() {
+    return _storage.read(key: _vendorIdKey);
+  }
+
   Future<void> clear() async {
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _roleKey);
@@ -92,5 +104,6 @@ class AuthStorage {
     await _storage.delete(key: _phoneKey);
     await _storage.delete(key: _landlordCodeKey);
     await _storage.delete(key: _linkedLandlordIdKey);
+    await _storage.delete(key: _vendorIdKey);
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import '../core/api_client.dart';
 import '../models/report.dart';
 import '../models/vendor.dart';
+import '../models/vendor_request.dart';
 
 /// 사진 업로드(하나 이상)가 실패했을 때, 어떤 파일이 실패했는지 알 수 있도록
 /// ApiException과 구분되는 전용 예외로 던진다.
@@ -153,5 +154,15 @@ class ReportService {
     final data = response.data as Map<String, dynamic>;
     final list = (data['vendors'] as List?) ?? [];
     return list.map((e) => Vendor.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// GET /api/vendors/requests?vendorId= — 업체가 아직 견적을 안 낸 신고 목록.
+  /// AuthProvider.currentUser?.vendorId(vendors.id — users.id 아님)로 조회한다.
+  /// 새 업체 계정이면 결과가 비어 있을 수 있고, 그건 정상이다.
+  Future<List<VendorRequest>> getVendorRequests({required String vendorId}) async {
+    final response = await _api.get('/api/vendors/requests', queryParameters: {'vendorId': vendorId});
+    final data = response.data as Map<String, dynamic>;
+    final list = (data['requests'] as List?) ?? [];
+    return list.map((e) => VendorRequest.fromJson(e as Map<String, dynamic>)).toList();
   }
 }
