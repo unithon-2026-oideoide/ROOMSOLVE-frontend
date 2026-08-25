@@ -519,6 +519,7 @@ class _QuoteItem extends StatelessWidget {
             ElevatedButton(
               onPressed: isSubmitting ? null : onSelect,
               style: ElevatedButton.styleFrom(
+                minimumSize: const Size(72, 34),
                 backgroundColor: AppColors.brandMain,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
