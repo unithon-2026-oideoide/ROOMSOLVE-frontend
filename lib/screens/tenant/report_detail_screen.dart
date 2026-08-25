@@ -4,6 +4,7 @@ import '../../core/api_client.dart';
 import '../../core/category_helpers.dart';
 import '../../models/report.dart';
 import '../../services/repair_service.dart';
+import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
@@ -31,13 +32,20 @@ class ReportDetailScreen extends StatefulWidget {
 
 class _ReportDetailScreenState extends State<ReportDetailScreen> {
   List<Map<String, dynamic>>? _timeline;
+  List<Map<String, dynamic>>? _asInfo;
   String? _currentStatus;
   bool _isLoadingTimeline = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTimeline();
+    final isAppliance = widget.report.category == 'appliance' || widget.report.recommendedPath == 'manufacturer_as';
+    if (isAppliance) {
+      _loadAsInfo();
+      _isLoadingTimeline = false;
+    } else {
+      _loadTimeline();
+    }
   }
 
   Future<void> _loadTimeline() async {
@@ -58,6 +66,71 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     }
   }
 
+  Future<void> _loadAsInfo() async {
+    try {
+      final result = await ReportService.instance.getManufacturerAs(category: widget.report.category ?? 'appliance');
+      if (mounted) {
+        setState(() {
+          _asInfo = _filterAsInfo(result);
+        });
+      }
+    } catch (_) {}
+  }
+
+  List<Map<String, dynamic>> _filterAsInfo(List<Map<String, dynamic>> rawList) {
+    if (rawList.isEmpty) return [];
+
+    final applianceType = widget.report.applianceType?.toLowerCase();
+    List<Map<String, dynamic>> filtered = [];
+
+    if (applianceType != null && applianceType.isNotEmpty) {
+      filtered = rawList.where((item) {
+        final type = item['appliance_type']?.toString().toLowerCase();
+        return type == applianceType;
+      }).toList();
+    }
+
+    if (filtered.isEmpty) {
+      final seen = <String>{};
+      for (final item in rawList) {
+        final name = (item['manufacturer_name'] ?? item['name'])?.toString() ?? '';
+        if (name.isNotEmpty && !seen.contains(name)) {
+          seen.add(name);
+          filtered.add(item);
+        }
+      }
+    }
+
+    return filtered;
+  }
+
+  void _showContact(Map<String, dynamic> info) {
+    final name = info['manufacturer_name']?.toString() ?? info['name']?.toString() ?? '서비스 센터';
+    final phone = info['as_phone']?.toString() ?? info['phone']?.toString() ?? '연락처 정보가 없습니다.';
+    final url = info['as_url']?.toString() ?? info['url']?.toString();
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(name, style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('대표 번호: $phone', style: AppTextStyles.bodySemiBold14(color: AppColors.brandMain)),
+            if (url != null && url.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('홈페이지: $url', style: AppTextStyles.captionLight12(color: AppColors.gray6)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인')),
+        ],
+      ),
+    );
+  }
+
   bool get _isCompleted {
     final status = _currentStatus ?? widget.report.status;
     return status == 'completed' || status == 'done' || status == '완료';
@@ -66,12 +139,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final report = widget.report;
-    // 거절은 repair_status_timeline과 무관하게 reports.status 자체가 갖는 상태라
-    // 다른 무엇보다 우선한다 — 거절된 신고는 일정/진행 이력이 아예 없다.
+    final isAppliance = report.category == 'appliance' || report.recommendedPath == 'manufacturer_as';
     final rejected = report.isRejected;
     final badgeLabel = rejected
         ? '거절됨'
-        : (_isCompleted ? '완료' : (_currentStatus != null ? repairStatusLabel(_currentStatus) : report.statusLabel));
+        : (isAppliance
+            ? 'AS 접수'
+            : (_isCompleted ? '완료' : (_currentStatus != null ? repairStatusLabel(_currentStatus) : report.statusLabel)));
     final badgeColor = rejected ? AppColors.accentRed : AppColors.brandLight;
 
     return Scaffold(
@@ -145,7 +219,49 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     const SizedBox(height: 12),
                     const _TimelineCard(title: 'AI 판단 완료', done: true, subtitle: '원인 분석 및 긴급도 산정 완료'),
                     const SizedBox(height: 12),
-                    if (rejected)
+                    if (isAppliance) ...[
+                      const _TimelineCard(
+                        title: '제조사 A/S 접수',
+                        done: true,
+                        current: true,
+                        subtitle: '제조사 공식 서비스 센터를 통해 A/S를 접수해주세요.',
+                      ),
+                      if (_asInfo != null && _asInfo!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text('제조사 AS 연결', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+                        const SizedBox(height: 8),
+                        for (final info in _asInfo!) ...[
+                          GestureDetector(
+                            onTap: () => _showContact(info),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: AppColors.dropShadow,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    info['manufacturer_name']?.toString() ?? info['name']?.toString() ?? '서비스 센터',
+                                    style: AppTextStyles.bodySemiBold14(color: AppColors.gray8),
+                                  ),
+                                  const Row(
+                                    children: [
+                                      Text('연결', style: TextStyle(color: AppColors.brandMain, fontSize: 13, fontWeight: FontWeight.w600)),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.north_east, size: 16, color: AppColors.brandMain),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    ] else if (rejected)
                       const _TimelineCard(
                         title: '임대인 거절',
                         done: false,
