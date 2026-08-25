@@ -49,7 +49,16 @@ class _RoleChangeScreenState extends State<RoleChangeScreen> {
     });
     try {
       await context.read<AuthProvider>().updateRole(selected);
-      if (mounted) context.go(homePathForRole(selected));
+      if (mounted) {
+        // 바텀시트가 닫히는 애니메이션이 끝나기 전에 context.go로 라우트
+        // 스택 전체를 교체하면 Flutter 렌더링 엔진이
+        // '!semantics.parentDataDirty' assertion으로 죽는 경우가 있어,
+        // 다음 프레임으로 미뤄 현재 프레임/시맨틱스 트리가 먼저 정리되게 한다.
+        final target = homePathForRole(selected);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go(target);
+        });
+      }
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
