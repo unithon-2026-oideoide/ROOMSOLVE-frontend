@@ -202,7 +202,10 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
         child: Column(
@@ -373,6 +376,7 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
           ],
         ),
       ),
+    ),
     );
   }
 }

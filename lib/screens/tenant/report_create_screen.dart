@@ -126,85 +126,89 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const AppTopBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('문제 신고', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-                    const SizedBox(height: 20),
-                    Text(
-                      '발생한 문제를 사진과 함께 설명해 주세요. 정확한 내용이 빠른 해결에 도움이 됩니다.',
-                      style: AppTextStyles.bodyRegular16(color: AppColors.gray8),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.gray2,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: AppColors.dropShadow,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('문제 신고', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                      const SizedBox(height: 20),
+                      Text(
+                        '발생한 문제를 사진과 함께 설명해 주세요. 정확한 내용이 빠른 해결에 도움이 됩니다.',
+                        style: AppTextStyles.bodyRegular16(color: AppColors.gray8),
                       ),
-                      padding: const EdgeInsets.all(12),
-                      child: TextField(
-                        controller: _descriptionController,
-                        maxLines: 4,
-                        minLines: 3,
-                        style: AppTextStyles.bodyRegular16(color: AppColors.black),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '어떤 문제가 발생했나요?',
-                          hintStyle: AppTextStyles.bodyRegular16(color: AppColors.gray6),
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.gray2,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: AppColors.dropShadow,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: TextField(
+                          controller: _descriptionController,
+                          maxLines: 4,
+                          minLines: 3,
+                          style: AppTextStyles.bodyRegular16(color: AppColors.black),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '어떤 문제가 발생했나요?',
+                            hintStyle: AppTextStyles.bodyRegular16(color: AppColors.gray6),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text('사진·영상 첨부', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        for (int i = 0; i < _photos.length; i++) ...[
-                          _photoTile(i),
-                          if (i != _photos.length - 1) const SizedBox(width: 12),
+                      const SizedBox(height: 20),
+                      Text('사진·영상 첨부', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          for (int i = 0; i < _photos.length; i++) ...[
+                            _photoTile(i),
+                            if (i != _photos.length - 1) const SizedBox(width: 12),
+                          ],
+                          if (_photos.isNotEmpty) const SizedBox(width: 12),
+                          _addTile(),
                         ],
-                        if (_photos.isNotEmpty) const SizedBox(width: 12),
-                        _addTile(),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      '사진이나 영상을 추가하면 문제 상황을 더 정확히 전달할 수 있습니다.',
-                      style: AppTextStyles.captionLight12(color: const Color(0xFF212121)),
-                    ),
-                    const SizedBox(height: 20),
-                    if (_errorMessage != null) ...[
-                      Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
-                      const SizedBox(height: 12),
-                    ],
-                    SizedBox(
-                      height: 39,
-                      child: ElevatedButton(
-                        onPressed: _goNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                          elevation: 0,
-                        ),
-                        child: Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      Text(
+                        '사진이나 영상을 추가하면 문제 상황을 더 정확히 전달할 수 있습니다.',
+                        style: AppTextStyles.captionLight12(color: const Color(0xFF212121)),
+                      ),
+                      const SizedBox(height: 20),
+                      if (_errorMessage != null) ...[
+                        Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
+                        const SizedBox(height: 12),
+                      ],
+                      SizedBox(
+                        height: 39,
+                        child: ElevatedButton(
+                          onPressed: _goNext,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
+                          ),
+                          child: Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const AppBottomNav(current: AppBottomNavTab.reports),
-          ],
+              const AppBottomNav(current: AppBottomNavTab.reports),
+            ],
+          ),
         ),
       ),
     );

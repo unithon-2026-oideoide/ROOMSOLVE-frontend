@@ -106,7 +106,10 @@ class _NewRequestDetailScreenState extends State<NewRequestDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
-    return Scaffold(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
         child: Column(
@@ -258,6 +261,7 @@ class _NewRequestDetailScreenState extends State<NewRequestDetailScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }
