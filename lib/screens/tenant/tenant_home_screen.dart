@@ -59,7 +59,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
               child: RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
                   children: [
                     RichText(
                       text: TextSpan(
@@ -98,16 +98,22 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      height: 39,
-                      child: ElevatedButton(
-                        onPressed: () => context.push('/tenant/reports/new'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                          elevation: 0,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: SizedBox(
+                        height: 39,
+                        child: ElevatedButton(
+                          onPressed: () => context.push('/tenant/reports/new'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
+                          ),
+                          child: Text('새 문제 신고하기', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                         ),
-                        child: Text('새 문제 신고하기', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                       ),
                     ),
                     const SizedBox(height: 32),
