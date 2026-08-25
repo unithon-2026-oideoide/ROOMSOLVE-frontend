@@ -227,6 +227,9 @@ class _ReportProgressCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () => context.push('/tenant/reports/result', extra: report),
               style: ElevatedButton.styleFrom(
+                // 앱 전역 테마의 minimumSize(가로 무한대)가 Expanded 없이 Row에 바로
+                // 들어간 이 버튼에서 "infinite width" 레이아웃 예외를 일으켜 덮어쓴다.
+                minimumSize: Size.zero,
                 backgroundColor: AppColors.brandLight,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
