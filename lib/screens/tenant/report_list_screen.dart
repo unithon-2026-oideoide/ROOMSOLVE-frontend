@@ -87,18 +87,23 @@ class _ReportListScreenState extends State<ReportListScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _errorMessage != null
-                        ? ListView(
-                            children: [
+                // RefreshIndicator의 직접 자식은 항상 같은 Scrollable(ListView)이어야
+                // 한다. 로딩/에러 상태에서 다른 위젯으로 통째로 바꿔치기하면
+                // Flutter 렌더링 엔진이 '!semantics.parentDataDirty' assertion으로
+                // 죽는 경우가 있어, 상태별 콘텐츠도 전부 ListView 안의 아이템으로 둔다.
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  children: _isLoading
+                      ? const [
+                          SizedBox(height: 80),
+                          Center(child: CircularProgressIndicator()),
+                        ]
+                      : _errorMessage != null
+                          ? [
                               const SizedBox(height: 80),
                               Center(child: Text(_errorMessage!, style: AppTextStyles.bodyRegular14(color: AppColors.accentRed))),
-                            ],
-                          )
-                        : ListView(
-                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                            children: [
+                            ]
+                          : [
                               Text('신고 내역', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                               const SizedBox(height: 12),
                               Container(
@@ -139,7 +144,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
                                   const SizedBox(height: 12),
                                 ],
                             ],
-                          ),
+                ),
               ),
             ),
             const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/tenant', reportsPath: '/tenant/reports'),

@@ -85,11 +85,19 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                        children: [
+                // RefreshIndicator의 직접 자식은 항상 같은 Scrollable(ListView)이어야
+                // 한다. 로딩 중일 때 Center(CircularProgressIndicator)로 통째로
+                // 바꿔치기하면(=Scrollable이 있다가 없다가 함) 라우트 전환과 겹칠 때
+                // Flutter 렌더링 엔진이 '!semantics.parentDataDirty' assertion으로
+                // 죽는 경우가 있어, 로딩 스피너도 ListView 안의 아이템으로 둔다.
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  children: _isLoading
+                      ? const [
+                          SizedBox(height: 120),
+                          Center(child: CircularProgressIndicator()),
+                        ]
+                      : [
                           if (_errorMessage != null)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 12),
