@@ -52,6 +52,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 사용자 유형 변경 화면에서 호출된다. 유형 변경 전용 백엔드 API가 아직
+  /// 없어 로컬 상태만 갱신한다. TODO: 서버에 유형 변경을 반영하는 API가
+  /// 추가되면 여기서 호출해야 한다.
+  void updateRole(UserRole role) {
+    if (_currentUser == null) return;
+    _currentUser = _currentUser!.copyWith(role: role);
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     await AuthService.instance.logout();
     _currentUser = null;

@@ -21,6 +21,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('로그인'), findsWidgets);
+    expect(find.text('ROOMSOLVE'), findsWidgets);
+    expect(find.text('로그인하기'), findsWidgets);
   });
 }

@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/api_client.dart';
-import '../../models/report.dart';
-import '../../services/report_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/app_top_bar.dart';
+import '../../widgets/app_bottom_nav.dart';
 
+/// 1단계: 문제 설명 + 사진 첨부. "다음 단계로"에서 실제 업로드/AI 분석은
+/// 하지 않고, 입력값을 들고 2단계(추가 정보 입력 화면)로 넘어간다.
+/// 실제 ReportService.analyzeReport 호출은 추가 정보 입력 화면에서 수행한다.
 class ReportCreateScreen extends StatefulWidget {
   const ReportCreateScreen({super.key});
 
@@ -19,9 +23,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   final _descriptionController = TextEditingController();
   final List<File> _photos = [];
   final _picker = ImagePicker();
-  bool _isSubmitting = false;
   String? _errorMessage;
-  String _statusMessage = '';
 
   @override
   void dispose() {
@@ -36,130 +38,172 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
     }
   }
 
-  Future<void> _submit() async {
-    if (_photos.isEmpty) return;
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-      _statusMessage = '사진 업로드 중... (0/${_photos.length})';
-    });
-    try {
-      final Report result = await ReportService.instance.analyzeReport(
-        description: _descriptionController.text.trim(),
-        photos: _photos,
-        onUploadProgress: (completed, total) {
-          if (!mounted) return;
-          setState(() {
-            _statusMessage = completed >= total ? 'AI 분석 중...' : '사진 업로드 중... ($completed/$total)';
-          });
-        },
-      );
-      if (mounted) {
-        context.push('/tenant/reports/result', extra: result);
-      }
-    } on PhotoUploadException catch (e) {
-      setState(() => _errorMessage = '사진 업로드에 실패했습니다: ${e.message}');
-    } on ApiException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (e) {
-      setState(() => _errorMessage = '요청 처리 중 오류가 발생했습니다: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-          _statusMessage = '';
-        });
-      }
+  Future<void> _showAddPhotoSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('카메라로 촬영'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('갤러리에서 선택'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _goNext() {
+    if (_photos.isEmpty) {
+      setState(() => _errorMessage = '사진을 최소 1장 첨부해주세요.');
+      return;
     }
+    context.push(
+      '/tenant/reports/new/details',
+      extra: {'description': _descriptionController.text.trim(), 'photos': _photos},
+    );
+  }
+
+  Widget _photoTile(int index) {
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(_photos[index], fit: BoxFit.cover),
+            ),
+            Positioned(
+              top: 2,
+              right: 2,
+              child: GestureDetector(
+                onTap: () => setState(() => _photos.removeAt(index)),
+                child: const CircleAvatar(
+                  radius: 10,
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.close, size: 14, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _addTile() {
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: GestureDetector(
+          onTap: _showAddPhotoSheet,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.gray2,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.add, color: AppColors.gray6),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('새 하자보수 요청')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.white,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // TODO: 디자인 적용 필요
-            TextField(
-              controller: _descriptionController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: '어떤 문제가 있나요?',
-                hintText: '예: 화장실 세면대 아래에서 물이 새요',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('카메라'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('갤러리'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (_photos.isEmpty)
-              const Text(
-                '사진을 최소 1장 첨부해주세요.',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            const SizedBox(height: 4),
-            if (_photos.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (int i = 0; i < _photos.length; i++)
-                    Stack(
+            const AppTopBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('문제 신고', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const SizedBox(height: 20),
+                    Text(
+                      '발생한 문제를 사진과 함께 설명해 주세요. 정확한 내용이 빠른 해결에 도움이 됩니다.',
+                      style: AppTextStyles.bodyRegular16(color: AppColors.gray8),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.gray2,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: TextField(
+                        controller: _descriptionController,
+                        maxLines: 4,
+                        minLines: 3,
+                        style: AppTextStyles.bodyRegular16(color: AppColors.black),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: '어떤 문제가 발생했나요?',
+                          hintStyle: AppTextStyles.bodyRegular16(color: AppColors.gray6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('사진·영상 첨부', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
+                    const SizedBox(height: 20),
+                    Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_photos[i], width: 96, height: 96, fit: BoxFit.cover),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.cancel, color: Colors.red),
-                            onPressed: () => setState(() => _photos.removeAt(i)),
-                          ),
-                        ),
+                        for (int i = 0; i < _photos.length; i++) ...[
+                          _photoTile(i),
+                          if (i != _photos.length - 1) const SizedBox(width: 12),
+                        ],
+                        if (_photos.isNotEmpty) const SizedBox(width: 12),
+                        _addTile(),
                       ],
                     ),
-                ],
+                    const SizedBox(height: 20),
+                    Text(
+                      '사진이나 영상을 추가하면 문제 상황을 더 정확히 전달할 수 있습니다.',
+                      style: AppTextStyles.captionLight12(color: const Color(0xFF212121)),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_errorMessage != null) ...[
+                      Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
+                      const SizedBox(height: 12),
+                    ],
+                    SizedBox(
+                      height: 39,
+                      child: ElevatedButton(
+                        onPressed: _goNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandLight,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                          elevation: 0,
+                        ),
+                        child: Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 24),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-              ),
-            if (_isSubmitting && _statusMessage.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_statusMessage, textAlign: TextAlign.center),
-              ),
-            FilledButton(
-              onPressed: (_isSubmitting || _photos.isEmpty) ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('AI 분석 요청'),
             ),
+            const AppBottomNav(current: AppBottomNavTab.reports),
           ],
         ),
       ),

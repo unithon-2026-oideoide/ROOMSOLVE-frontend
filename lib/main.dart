@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
 import 'router.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +45,7 @@ class _AppViewState extends State<_AppView> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: '집 하자보수 매칭',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
+      theme: AppTheme.light,
       routerConfig: _router,
     );
   }

@@ -4,8 +4,12 @@ import '../../core/api_client.dart';
 import '../../models/report.dart';
 import '../../models/vendor.dart';
 import '../../services/report_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/app_top_bar.dart';
+import '../../widgets/app_bottom_nav.dart';
 
-/// AI 분석 결과의 recommended_path에 따라 다른 위젯을 보여주는 화면.
+/// AI 분석 결과의 recommended_path에 따라 다른 화면을 보여준다.
 /// self_fix / manufacturer_as / vendor_match 세 갈래로 분기한다.
 class ReportResultScreen extends StatelessWidget {
   final Report report;
@@ -15,27 +19,13 @@ class ReportResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('분석 결과')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.white,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // TODO: 디자인 적용 필요
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('분류: ${report.category ?? '알 수 없음'}'),
-                    Text('심각도: ${report.severity ?? '알 수 없음'}'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            const AppTopBar(),
             Expanded(child: _buildBranch(context)),
+            const AppBottomNav(current: AppBottomNavTab.reports),
           ],
         ),
       ),
@@ -51,33 +41,162 @@ class ReportResultScreen extends StatelessWidget {
       case RecommendedPath.vendorMatch:
         return _VendorMatchView(report: report);
       case RecommendedPath.unknown:
-        return const Center(child: Text('분석 결과를 확인할 수 없습니다.'));
+        return Center(
+          child: Text('분석 결과를 확인할 수 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+        );
     }
   }
 }
 
-class _SelfFixView extends StatelessWidget {
+class _ChatMessage {
+  const _ChatMessage({required this.text, required this.isUser});
+  final String text;
+  final bool isUser;
+}
+
+/// "세입자 - 자가조치가이드" 화면: AI 답변을 채팅 형태로 보여준다.
+/// 실시간 채팅 응답 API가 아직 없어 사용자가 보낸 메시지는 화면에만 표시된다.
+class _SelfFixView extends StatefulWidget {
   final Report report;
   const _SelfFixView({required this.report});
 
   @override
+  State<_SelfFixView> createState() => _SelfFixViewState();
+}
+
+class _SelfFixViewState extends State<_SelfFixView> {
+  final _inputController = TextEditingController();
+  late final List<_ChatMessage> _messages;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = [
+      if ((widget.report.description ?? '').isNotEmpty)
+        _ChatMessage(text: widget.report.description!, isUser: true),
+      _ChatMessage(
+        text: widget.report.selfFixGuide ??
+            '셀프 수리 가이드를 준비 중입니다. 잠시 후 다시 확인해 주세요.',
+        isUser: false,
+      ),
+    ];
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final text = _inputController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMessage(text: text, isUser: true));
+      _inputController.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('실시간 채팅 상담 기능은 준비 중입니다.')),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('셀프 수리 가능', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        // TODO: 디자인 적용 필요 - 임시 텍스트
-        Expanded(
-          child: SingleChildScrollView(
-            child: Text(report.selfFixGuide ?? '셀프 수리 가이드 (임시 텍스트)\n\n1. 전원/급수를 차단하세요.\n2. 관련 부품을 점검하세요.\n3. 필요 시 교체 부품을 구매하세요.'),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('자가 조치 가이드', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: AppColors.dropShadow,
+              ),
+              child: ListView(
+                children: [
+                  for (final m in _messages) _ChatBubble(message: m),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            'AI는 실수할 수 있습니다.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.captionRegular10(color: AppColors.gray6),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(color: AppColors.gray3, borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _inputController,
+                    onSubmitted: (_) => _send(),
+                    style: AppTextStyles.captionRegular10(color: AppColors.gray8),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: '채팅을 입력하세요.',
+                      hintStyle: AppTextStyles.captionRegular10(color: AppColors.gray8),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send, size: 20, color: AppColors.brandMain),
+                  onPressed: _send,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.message});
+  final _ChatMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message.isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          constraints: const BoxConstraints(maxWidth: 220),
+          decoration: BoxDecoration(color: AppColors.brandMain, borderRadius: BorderRadius.circular(20)),
+          child: Text(message.text, style: AppTextStyles.captionRegular10(color: AppColors.white)),
+        ),
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: AppColors.gray2, borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('AI 답변', style: AppTextStyles.captionRegular10(color: AppColors.black)),
+          const SizedBox(height: 8),
+          Text(message.text, style: AppTextStyles.captionRegular10(color: AppColors.black)),
+        ],
+      ),
+    );
+  }
+}
+
+/// "세입자 - 제조사AS" 화면.
 class _ManufacturerAsView extends StatefulWidget {
   final Report report;
   const _ManufacturerAsView({required this.report});
@@ -117,36 +236,92 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
     }
   }
 
+  void _showContact(Map<String, dynamic> info) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(info['name']?.toString() ?? '서비스 센터'),
+        content: Text(info['phone']?.toString() ?? '연락처 정보가 없습니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('닫기')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) return Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('제조사 A/S 안내', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        // TODO: 디자인 적용 필요 - 임시 텍스트
-        Expanded(
-          child: (_asInfo == null || _asInfo!.isEmpty)
-              ? const Text('제조사 A/S 정보 (임시 텍스트)\n\n연결된 제조사 A/S 정보가 없습니다.')
-              : ListView.builder(
-                  itemCount: _asInfo!.length,
-                  itemBuilder: (context, index) {
-                    final item = _asInfo![index];
-                    return ListTile(
-                      title: Text(item['name']?.toString() ?? '제조사'),
-                      subtitle: Text(item['phone']?.toString() ?? ''),
-                    );
-                  },
-                ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('제조사 AS', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const SizedBox(height: 26),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_errorMessage != null)
+            Center(child: Text(_errorMessage!, style: AppTextStyles.bodyRegular14(color: AppColors.accentRed)))
+          else if (_asInfo == null || _asInfo!.isEmpty)
+            Center(
+              child: _ServiceCenterPill(
+                label: '서비스 센터로 연결',
+                onTap: () => _showContact({'name': '고객센터', 'phone': '연결된 제조사 정보가 없습니다.'}),
+              ),
+            )
+          else
+            Center(
+              child: Column(
+                children: [
+                  for (final info in _asInfo!) ...[
+                    _ServiceCenterPill(
+                      label: info['name']?.toString() ?? '서비스 센터로 연결',
+                      onTap: () => _showContact(info),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
+class _ServiceCenterPill extends StatelessWidget {
+  const _ServiceCenterPill({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 73,
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(46),
+          boxShadow: AppColors.dropShadow,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: AppTextStyles.subtitleRegular18(color: AppColors.gray8)),
+            const SizedBox(width: 8),
+            Icon(Icons.north_east, size: 20, color: AppColors.gray8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "세입자 - 전문 업체 매칭" 화면: 업체 매칭 진행 단계를 보여준다.
+/// 매칭 자체(ReportService.matchVendors)는 기존 로직대로 백그라운드에서 호출해
+/// 1단계("수리업체 배정")의 상태 문구에 반영한다.
 class _VendorMatchView extends StatefulWidget {
   final Report report;
   const _VendorMatchView({required this.report});
@@ -157,8 +332,8 @@ class _VendorMatchView extends StatefulWidget {
 
 class _VendorMatchViewState extends State<_VendorMatchView> {
   List<Vendor>? _vendors;
-  bool _isLoading = true;
   String? _errorMessage;
+  bool _approvalRequested = false;
 
   @override
   void initState() {
@@ -169,49 +344,164 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
   Future<void> _load() async {
     try {
       final result = await ReportService.instance.matchVendors(reportId: widget.report.id);
-      setState(() {
-        _vendors = result;
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _vendors = result);
     } on ApiException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (e) {
-      setState(() {
-        _errorMessage = '업체 매칭 정보를 불러오지 못했습니다: $e';
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _errorMessage = '업체 매칭 정보를 불러오지 못했습니다: $e');
     }
+  }
+
+  String get _step1Subtitle {
+    if (_errorMessage != null) return '업체 매칭 중 오류가 발생했습니다.';
+    if (_vendors == null) return '적합한 수리업체를 찾고 있습니다.';
+    if (_vendors!.isEmpty) return '조건에 맞는 업체를 찾지 못했습니다.';
+    return '${_vendors!.first.name} 등 ${_vendors!.length}개 업체 매칭 완료';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) return Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('업체 매칭', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        // TODO: 디자인 적용 필요 - 임시 텍스트
-        Expanded(
-          child: (_vendors == null || _vendors!.isEmpty)
-              ? const Text('업체 매칭 결과 (임시 텍스트)\n\n매칭된 업체가 없습니다.')
-              : ListView.builder(
-                  itemCount: _vendors!.length,
-                  itemBuilder: (context, index) {
-                    final vendor = _vendors![index];
-                    return ListTile(
-                      title: Text(vendor.name),
-                      subtitle: Text('${vendor.category ?? ''} · 평점 ${vendor.rating ?? '-'}'),
-                    );
-                  },
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('전문 업체 매칭', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const SizedBox(height: 8),
+          Text(
+            '신고하신 문제를 검토했습니다.\n아래 절차에 따라 수리가 진행됩니다.',
+            style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
+          ),
+          const SizedBox(height: 16),
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('AI 판단 요약', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
+                const SizedBox(height: 8),
+                Text(
+                  widget.report.description ?? '전문 수리기사 방문이 필요한 것으로 판단됩니다.',
+                  style: AppTextStyles.bodyRegular12(color: AppColors.gray8),
                 ),
-        ),
-      ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('진행 단계', style: AppTextStyles.subtitleSemiBold16(color: AppColors.gray8)),
+                const SizedBox(height: 8),
+                _StepRow(number: 1, title: '수리업체 배정', subtitle: _step1Subtitle),
+                _StepRow(number: 2, title: '방문 일정 확정', subtitle: '확정되면 알림으로 안내드립니다.'),
+                _StepRow(number: 3, title: '현장 수리 진행', subtitle: '수리업체가 방문하여 문제를 해결합니다.'),
+                _StepRow(number: 4, title: '수리 완료 확인', subtitle: '완료 후 결과를 확인하고 서명합니다.', isLast: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('안내 사항', style: AppTextStyles.bodySemiBold16(color: AppColors.gray8)),
+                const SizedBox(height: 8),
+                Text(
+                  '진행 상황은 실시간으로 업데이트됩니다. 중요한 변경이 생기면 즉시 알림을 드립니다.',
+                  style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 44,
+            child: ElevatedButton(
+              onPressed: _approvalRequested
+                  ? null
+                  : () {
+                      setState(() => _approvalRequested = true);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('임대인에게 승인 요청을 보냈습니다.')),
+                      );
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandLight,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                _approvalRequested ? '승인 요청 완료' : '임대인 승인 요청하기',
+                style: AppTextStyles.bodySemiBold16(color: AppColors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: AppColors.dropShadow,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _StepRow extends StatelessWidget {
+  const _StepRow({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    this.isLast = false,
+  });
+
+  final int number;
+  final String title;
+  final String subtitle;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(color: Color(0xFFEDEDF2), shape: BoxShape.circle),
+            child: Text('$number', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: AppTextStyles.captionLight12(color: AppColors.gray5)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

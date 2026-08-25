@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,53 +44,97 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  InputDecoration _pillDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: AppTextStyles.bodyRegular14(color: AppColors.gray5),
+      filled: true,
+      fillColor: AppColors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(25),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('로그인')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // TODO: 디자인 적용 필요
-              const Text(
-                '집 하자보수 매칭 플랫폼',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: '이메일', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: '비밀번호', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 86),
+                Text(
+                  'ROOMSOLVE',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.titleBold30(color: AppColors.brandDark),
                 ),
-              FilledButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('로그인'),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => context.push('/signup'),
-                child: const Text('회원가입'),
-              ),
-            ],
+                const SizedBox(height: 67),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: AppColors.dropShadow,
+                  ),
+                  child: TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: AppTextStyles.bodyRegular14(color: AppColors.black),
+                    decoration: _pillDecoration('전화번호'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: AppColors.dropShadow,
+                  ),
+                  child: TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    style: AppTextStyles.bodyRegular14(color: AppColors.black),
+                    decoration: _pillDecoration('비밀번호'),
+                  ),
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: AppTextStyles.bodyRegular12(color: AppColors.accentRed),
+                  ),
+                ],
+                const SizedBox(height: 36),
+                SizedBox(
+                  height: 47,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brandLight,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                          )
+                        : Text('로그인하기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => context.push('/signup'),
+                  child: Text('회원가입', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+                ),
+              ],
+            ),
           ),
         ),
       ),

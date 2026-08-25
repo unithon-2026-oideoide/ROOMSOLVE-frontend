@@ -4,7 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/api_client.dart';
 import '../../models/report.dart';
 import '../../services/report_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/app_top_bar.dart';
 
+/// "신고 내역 화면"
 class ReportListScreen extends StatefulWidget {
   const ReportListScreen({super.key});
 
@@ -16,6 +21,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
   List<Report>? _reports;
   bool _isLoading = true;
   String? _errorMessage;
+  String _filter = '전체';
+
+  static const _filters = ['전체', '접수 완료', '처리 중', '완료'];
 
   @override
   void initState() {
@@ -47,43 +55,150 @@ class _ReportListScreenState extends State<ReportListScreen> {
     }
   }
 
+  String _statusLabel(Report r) {
+    final s = r.status?.toLowerCase();
+    if (s == null || s.isEmpty || s == 'pending') return '접수 완료';
+    if (s == 'completed' || s == 'done' || s.contains('완료')) return '완료';
+    return '처리 중';
+  }
+
+  Color _statusColor(String label) {
+    switch (label) {
+      case '접수 완료':
+        return AppColors.accentGreen;
+      case '완료':
+        return AppColors.gray5;
+      default:
+        return AppColors.brandMain;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final all = _reports ?? const [];
+    final filtered = all.where((r) => _filter == '전체' || _statusLabel(r) == _filter).toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('요청 내역')),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(),
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTopBar(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                        ? ListView(
+                            children: [
+                              const SizedBox(height: 80),
+                              Center(child: Text(_errorMessage!, style: AppTextStyles.bodyRegular14(color: AppColors.accentRed))),
+                            ],
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                            children: [
+                              Text('신고 내역', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.gray1,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: AppColors.dropShadow,
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: _filter,
+                                    icon: const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
+                                    style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
+                                    items: [for (final f in _filters) DropdownMenuItem(value: f, child: Text(f))],
+                                    onChanged: (v) => setState(() => _filter = v ?? '전체'),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (filtered.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  child: Center(
+                                    child: Text('등록된 신고가 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+                                  ),
+                                )
+                              else
+                                for (final r in filtered) ...[
+                                  _ReportRow(
+                                    report: r,
+                                    statusLabel: _statusLabel(r),
+                                    statusColor: _statusColor(_statusLabel(r)),
+                                    onTap: () => context.push('/tenant/reports/${r.id}', extra: r),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                            ],
+                          ),
+              ),
+            ),
+            const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/tenant', reportsPath: '/tenant/reports'),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildBody() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) {
-      return ListView(
-        children: [
-          const SizedBox(height: 80),
-          Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red))),
-        ],
-      );
-    }
-    // TODO: 디자인 적용 필요
-    if (_reports == null || _reports!.isEmpty) {
-      return ListView(children: const [SizedBox(height: 80), Center(child: Text('등록된 요청이 없습니다.'))]);
-    }
-    return ListView.separated(
-      itemCount: _reports!.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final report = _reports![index];
-        return ListTile(
-          title: Text(report.category ?? '분류 대기 중'),
-          subtitle: Text(report.description ?? ''),
-          trailing: Text(report.status ?? ''),
-          onTap: () => context.push('/tenant/reports/result', extra: report),
-        );
-      },
+class _ReportRow extends StatelessWidget {
+  const _ReportRow({required this.report, required this.statusLabel, required this.statusColor, required this.onTap});
+
+  final Report report;
+  final String statusLabel;
+  final Color statusColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: AppColors.dropShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    report.category ?? report.description ?? '분류 대기 중',
+                    style: AppTextStyles.subtitleSemiBold16(color: AppColors.gray8),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(999)),
+                  child: Text(statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (report.createdAt != null)
+              Text(
+                '접수 ${report.createdAt!.year}.${report.createdAt!.month.toString().padLeft(2, '0')}.${report.createdAt!.day.toString().padLeft(2, '0')}',
+                style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+              ),
+            const SizedBox(height: 8),
+            Text(report.status ?? '처리 대기 중', style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -2,8 +2,9 @@
 
 집 하자보수 매칭 플랫폼 (세입자 / 임대인 / 수리기사) Flutter 앱.
 
-디자인 시안이 아직 없어서, 현재는 화면 구조·네비게이션·API 연동 뼈대만 잡혀 있고
-UI는 기본 Material 위젯으로만 구성되어 있습니다. 실제 디자인은 이후 별도로 적용합니다.
+Figma "ROOMSOLVE 와이어프레임" 디자인을 기준으로 색상/타이포그래피 테마와 전체
+화면 UI가 적용되어 있습니다. 자세한 내용은 [디자인 적용 완료](#디자인-적용-완료)
+섹션을 참고하세요.
 
 ## 시작하기
 
@@ -32,15 +33,26 @@ lib/
   core/
     api_client.dart         # dio 기반 공통 API 클라이언트 (.env의 API_BASE_URL 사용)
     auth_storage.dart       # access token 로컬 저장 (flutter_secure_storage)
+  core/
+    role_routes.dart        # role별 홈/요청 경로, role 라벨 헬퍼 (router.dart와 설정 화면이 공유)
   providers/
     auth_provider.dart      # 로그인 상태 및 현재 사용자 role 전역 관리 (Provider)
-  models/                   # API 응답 모델 (User, Report, Quote, Vendor)
+  theme/
+    app_colors.dart         # Figma 색상 토큰 (브랜드 블루 램프, 그레이스케일, 액센트)
+    app_text_styles.dart    # Figma 타이포그래피 램프 (Title/Subtitle/Body/Button/Caption)
+    app_theme.dart          # 위 토큰으로 구성한 앱 전역 ThemeData
+  widgets/
+    app_top_bar.dart        # 공용 "ROOMSOLVE" 상단 바
+    app_bottom_nav.dart     # 공용 하단 탭(홈/신고·요청/설정)
+  models/                   # API 응답 모델 (User, Report, Quote, Vendor) + technician_job.dart(목업)
   services/                 # 도메인별 API 호출 (auth/report/quote/landlord)
   screens/
-    auth/                   # 로그인, 회원가입(role 선택 포함)
-    tenant/                 # 세입자: 홈, 요청 등록(사진+설명), 분석 결과, 요청 내역
-    landlord/                # 임대인: 대시보드, 요청 상세(승인/거절), 자동 승인 설정
-    technician/               # 수리기사: 스켈레톤만 (추후 구현)
+    auth/                   # 로그인, 회원가입(카드형 유형 선택 포함)
+    tenant/                 # 세입자: 홈, 신고 생성/추가정보, 분석 결과(자가조치·제조사AS·업체매칭),
+                             # 방문 일정, 수리 진행 현황, 신고 내역/상세
+    landlord/                # 임대인: 대시보드, 요청 관리/상세(승인·거절), 방문 일정, 호실 관리, 자동 승인 설정
+    technician/               # 수리기사: 홈, 배정 작업 목록, 작업 상세, 수리 완료 확인 (백엔드 API 없어 목업 데이터)
+    settings/                 # 공용: 설정, 계정 정보, 사용자 유형 변경, 알림 설정
 ```
 
 ## 백엔드 연동
@@ -59,18 +71,66 @@ Provider를 사용합니다 (러닝커브가 낮아 팀 전체가 빠르게 익�
 로그인 상태/역할은 `providers/auth_provider.dart`의 `AuthProvider`에서 관리하며,
 `router.dart`가 이를 구독해 로그인 여부와 역할에 따라 리다이렉트합니다.
 
-## 디자인 적용 시 교체 안내
+## 디자인 적용 완료
 
-디자인 시안이 나오면 아래 폴더/파일 위주로 교체하면 됩니다. 라우팅 구조와 API 연동
-로직(`core/`, `services/`, `providers/`, `router.dart`)은 그대로 유지한 채 화면
-내부 위젯만 바꾸면 됩니다.
+Figma 파일 "ROOMSOLVE 와이어프레임"(fileKey `haIm2BdzxDs72DhVpDuNkg`) Page 1의
+프레임 29개를 모두 화면에 반영했습니다. 기존 화면의 API 연동 로직(report_service,
+landlord_service 등 호출과 에러 처리)은 그대로 두고 레이아웃/스타일만 교체했습니다.
 
-- `lib/screens/**/*.dart` — 각 화면의 `// TODO: 디자인 적용 필요` 표시된 위젯들을
-  실제 디자인 컴포넌트로 교체
-- 공통 테마/컬러/타이포그래피를 적용하려면 `lib/main.dart`의 `MaterialApp.router`
-  `theme:` 부분에 `ThemeData`를 디자인 시스템에 맞게 정의
-- 공통 위젯(버튼, 카드, 입력 필드 등)이 정해지면 `lib/widgets/` 폴더를 새로 만들어
-  재사용 컴포넌트로 분리하는 것을 권장합니다.
+| 프레임 | 화면 파일 | 상태 |
+| --- | --- | --- |
+| 로그인 | `screens/auth/login_screen.dart` | 완료 |
+| 유형 선택 | `screens/auth/signup_screen.dart` | 완료 (회원가입 폼 + 카드형 유형 선택 통합) |
+| 세입자 - 홈 | `screens/tenant/tenant_home_screen.dart` | 완료 |
+| 세입자 - 새 문제 신고 | `screens/tenant/report_create_screen.dart` | 완료 (1단계: 설명+사진) |
+| 세입자 - 추가정보입력 | `screens/tenant/report_additional_info_screen.dart` | 완료 (2단계: AI 분석 호출) |
+| 세입자 - 자가조치가이드 | `screens/tenant/report_result_screen.dart` (`_SelfFixView`) | 완료 |
+| 세입자 - 제조사AS | `screens/tenant/report_result_screen.dart` (`_ManufacturerAsView`) | 완료 |
+| 세입자 - 전문 업체 매칭 | `screens/tenant/report_result_screen.dart` (`_VendorMatchView`) | 완료 |
+| 세입자 - 방문 일정 확정 | `screens/tenant/report_visit_schedule_screen.dart` | 완료 |
+| 세입자 - 수리 진행 현황 | `screens/tenant/report_progress_screen.dart` | 완료 |
+| 임대인 - 홈 | `screens/landlord/landlord_dashboard_screen.dart` | 완료 |
+| 임대인 - 수리요청 / 수리요청 상세 | `screens/landlord/request_detail_screen.dart` | 완료 (두 디자인을 하나의 상세 화면으로 통합) |
+| 임대인 - 수리요청 거절 | `request_detail_screen.dart` 내 확인 다이얼로그 | 완료 |
+| 임대인 - 승인 거절 안내 | `screens/landlord/request_rejected_screen.dart` | 완료 |
+| 임대인 - 수리요청관리 | `screens/landlord/landlord_requests_screen.dart` | 완료 |
+| 임대인 - 자동처리 한도 설정 | `screens/landlord/auto_approval_setting_screen.dart` | 완료 |
+| 임대인 - 방문 일정 확정 | `screens/landlord/landlord_visit_schedule_screen.dart` | 완료 |
+| 임대인 - 호실 관리 화면 | `screens/landlord/landlord_units_screen.dart` | 완료 |
+| 수리기사 홈 화면 | `screens/technician/technician_home_screen.dart` | 완료 (목업 데이터) |
+| 배정 작업 목록 화면 | `screens/technician/technician_job_list_screen.dart` | 완료 (목업 데이터) |
+| 작업 상세 화면 | `screens/technician/job_detail_screen.dart` | 완료 (목업 데이터) |
+| 수리 완료 확인 화면 | `screens/technician/repair_complete_screen.dart` | 완료 (목업 데이터) |
+| 신고 내역 화면 | `screens/tenant/report_list_screen.dart` | 완료 |
+| 신고 내역 상세 화면 | `screens/tenant/report_detail_screen.dart` | 완료 |
+| 설정 화면 | `screens/settings/settings_screen.dart` | 완료 (로그아웃 버튼을 여기로 이동) |
+| 사용자 유형 변경 화면 | `screens/settings/role_change_screen.dart` | 완료 |
+| 알림 설정 화면 | `screens/settings/notification_settings_screen.dart` | 완료 (로컬 상태만) |
+| 계정 정보 화면 | `screens/settings/account_info_screen.dart` | 완료 |
+
+### 남은 작업
+
+- **아이콘 에셋**: 하단 탭, 상태 배지 등은 Material Icons로 대체했습니다.
+  Figma의 실제 SVG 아이콘(예: `settings`, `home`, `send`, `arrow-up-right`)으로
+  교체하려면 `download_assets` 등으로 원본을 받아 `assets/icons/`에 추가하고
+  각 화면에서 `Icon(...)` 대신 `Image.asset(...)`으로 바꿔야 합니다.
+- **실제 폰트 파일 추가**: 원래 디자인 폰트는 Pretendard이지만, Google Fonts
+  카탈로그에 없어 `google_fonts` 패키지로 Noto Sans KR을 대체 사용 중입니다
+  (`lib/theme/app_text_styles.dart` 상단 주석 참고). Pretendard 실물 폰트를
+  쓰려면 `.ttf`를 `assets/fonts/`에 추가하고 `pubspec.yaml`의 `fonts:` 섹션에
+  등록한 뒤 `AppTextStyles`의 `GoogleFonts.notoSansKr(...)` 호출을
+  `TextStyle(fontFamily: 'Pretendard', ...)`로 교체하면 됩니다.
+- **수리기사 화면 백엔드 연동**: `technician/` 화면 4개는 대응하는 백엔드
+  API/서비스가 아직 없어 `lib/models/technician_job.dart`의 로컬 목업 데이터를
+  사용합니다. `technician_service.dart`와 실제 작업 배정 API가 추가되면
+  목업을 서버 데이터로 교체해야 합니다.
+- **디자인에 없던 값 보완**: 방문 일정(날짜/시간/업체), 자동처리 한도 금액,
+  신고 내역 상세의 위치/긴급도 등 일부 필드는 백엔드 응답에 대응 필드가 없어
+  디자인의 예시 값을 그대로 쓰고 있습니다. 관련 API가 확정되면 실데이터로
+  교체해야 합니다 (각 파일 상단 주석에 `TODO`로 표시).
+- **알림 수신 채널/설정 저장**: `notification_settings_screen.dart`는 저장 시
+  서버에 반영되지 않고 로컬 상태만 바뀝니다. 알림 설정 API가 추가되면 연동이
+  필요합니다.
 
 ## 테스트
 
