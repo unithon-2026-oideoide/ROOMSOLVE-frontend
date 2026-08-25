@@ -69,7 +69,11 @@ class AuthService {
     if (token != null) {
       await AuthStorage.instance.saveAccessToken(token.toString());
     }
-    final user = AppUser.fromJson(data['user'] ?? data);
+    // vendor는 user와 형제 키다(data['vendor'], data['user'] 안이 아님) — role이
+    // technician일 때만 signup/login 둘 다 내려준다. AppUser.fromJson은 data['user']만
+    // 받아 vendor를 모르므로, 여기서 꺼내 copyWith로 붙인다.
+    final vendor = data['vendor'] as Map<String, dynamic>?;
+    final user = AppUser.fromJson(data['user'] ?? data).copyWith(vendorId: vendor?['id']?.toString());
     await _persistUser(user);
     return (user: user, hasSession: token != null);
   }
@@ -81,5 +85,6 @@ class AuthService {
     await AuthStorage.instance.savePhone(user.phone);
     await AuthStorage.instance.saveLandlordCode(user.landlordCode);
     await AuthStorage.instance.saveLinkedLandlordId(user.linkedLandlordId);
+    await AuthStorage.instance.saveVendorId(user.vendorId);
   }
 }

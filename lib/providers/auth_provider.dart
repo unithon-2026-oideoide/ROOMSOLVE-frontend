@@ -29,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
         final phone = await AuthStorage.instance.readPhone();
         final landlordCode = await AuthStorage.instance.readLandlordCode();
         final linkedLandlordId = await AuthStorage.instance.readLinkedLandlordId();
+        final vendorId = await AuthStorage.instance.readVendorId();
         _currentUser = AppUser(
           id: id ?? '',
           email: '',
@@ -37,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
           role: userRoleFromString(roleString),
           landlordCode: landlordCode,
           linkedLandlordId: linkedLandlordId,
+          vendorId: vendorId,
         );
       }
     } catch (_) {

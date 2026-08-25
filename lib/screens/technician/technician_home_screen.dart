@@ -13,6 +13,9 @@ import '../../widgets/app_top_bar.dart';
 
 /// "수리기사 홈 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
 /// 일정을 가져온다. 배정된 일정이 없으면 빈 상태 안내를 보여준다.
+/// "새 일감 보기"는 아직 견적을 안 낸 신고 목록(/technician/requests,
+/// GET /api/vendors/requests)으로 이동한다 — 이 화면의 배정 일정과는 다른
+/// 데이터다. 견적을 내고 임대인이 선택해야 비로소 배정 일정이 된다.
 class TechnicianHomeScreen extends StatefulWidget {
   const TechnicianHomeScreen({super.key});
 
@@ -176,6 +179,26 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                         _ScheduleCard(job: job, onTap: () => context.push('/technician/jobs/${job.id}', extra: job)),
                         const SizedBox(height: 12),
                       ],
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => context.push('/technician/requests'),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.brandLight,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: const [BoxShadow(color: Color(0x0F000000), offset: Offset(0, 2), blurRadius: 8)],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('새 일감 보기 (견적 내기)', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
+                            const Icon(Icons.arrow_forward, size: 18, color: AppColors.white),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () => context.push('/technician/jobs'),

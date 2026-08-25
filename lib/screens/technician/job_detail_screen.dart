@@ -69,10 +69,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<void> _submitQuote() async {
-    final technicianId = context.read<AuthProvider>().currentUser?.id;
-    if (technicianId == null || technicianId.isEmpty) {
+    final user = context.read<AuthProvider>().currentUser;
+    final technicianId = user?.id;
+    // vendorId(vendors.id)는 users.id와 다른 값이다 — quotes.vendor_id가 참조하는
+    // 건 vendors(id)라, technicianId를 잘못 넣으면 FK 위반으로 매번 실패한다.
+    final vendorId = user?.vendorId;
+    if (technicianId == null || technicianId.isEmpty || vendorId == null || vendorId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.')),
+        const SnackBar(content: Text('업체 정보를 확인할 수 없습니다. 다시 로그인해주세요.')),
       );
       return;
     }
@@ -99,7 +103,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       // 1. POST /api/quotes (price, proposed_visit_at)
       await QuoteService.instance.createQuote(
         reportId: _job.id,
-        vendorId: technicianId,
+        vendorId: vendorId,
         price: price,
         proposedVisitAt: _proposedVisitTime,
       );

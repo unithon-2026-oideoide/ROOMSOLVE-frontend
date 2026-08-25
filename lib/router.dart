@@ -7,6 +7,7 @@ import 'core/role_routes.dart';
 import 'models/report.dart';
 import 'models/technician_job.dart';
 import 'models/user.dart';
+import 'models/vendor_request.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -22,6 +23,8 @@ import 'screens/settings/landlord_link_screen.dart';
 import 'screens/settings/notification_settings_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/technician/job_detail_screen.dart';
+import 'screens/technician/new_request_detail_screen.dart';
+import 'screens/technician/new_request_list_screen.dart';
 import 'screens/technician/repair_complete_screen.dart';
 import 'screens/technician/technician_home_screen.dart';
 import 'screens/technician/technician_job_list_screen.dart';
@@ -125,6 +128,11 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/technician/jobs/:id/complete',
         builder: (context, state) => RepairCompleteScreen(job: state.extra as TechnicianJob),
+      ),
+      GoRoute(path: '/technician/requests', builder: (context, state) => const NewRequestListScreen()),
+      GoRoute(
+        path: '/technician/requests/:id',
+        builder: (context, state) => NewRequestDetailScreen(request: state.extra as VendorRequest),
       ),
 
       // 공용 설정

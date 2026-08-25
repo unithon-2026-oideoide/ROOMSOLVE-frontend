@@ -39,6 +39,12 @@ class AppUser {
   /// 이 사용자가 초대 코드로 연결한 임대인의 id. null이면 아직 연결되지 않은
   /// 상태다 — 이 경우 신고 접수(POST /api/reports)가 landlord_id 없이는 실패한다.
   final String? linkedLandlordId;
+  /// role이 technician인 계정만 값이 있다. vendors.id — POST /api/quotes의
+  /// vendor_id, GET /api/vendors/requests의 vendorId에 필요한 값이다. users.id와는
+  /// 다른 값이므로 절대 혼용하면 안 된다(quotes.vendor_id는 vendors(id) FK).
+  /// 백엔드가 signup/login 응답에 실어 주는 vendor.id를 그대로 저장한다 —
+  /// AppUser.fromJson만으로는 못 채우고(응답의 형제 키라) 호출부에서 채워 넣는다.
+  final String? vendorId;
 
   AppUser({
     required this.id,
@@ -49,6 +55,7 @@ class AppUser {
     required this.role,
     this.landlordCode,
     this.linkedLandlordId,
+    this.vendorId,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -75,10 +82,11 @@ class AppUser {
       'role': userRoleToString(role),
       'landlord_code': landlordCode,
       'linked_landlord_id': linkedLandlordId,
+      'vendor_id': vendorId,
     };
   }
 
-  AppUser copyWith({UserRole? role, String? landlordCode, String? linkedLandlordId}) {
+  AppUser copyWith({UserRole? role, String? landlordCode, String? linkedLandlordId, String? vendorId}) {
     return AppUser(
       id: id,
       email: email,
@@ -88,6 +96,7 @@ class AppUser {
       role: role ?? this.role,
       landlordCode: landlordCode ?? this.landlordCode,
       linkedLandlordId: linkedLandlordId ?? this.linkedLandlordId,
+      vendorId: vendorId ?? this.vendorId,
     );
   }
 }
