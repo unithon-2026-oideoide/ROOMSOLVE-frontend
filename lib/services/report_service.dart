@@ -47,6 +47,7 @@ class ReportService {
     String? recommendedPath,
     String? selfFixGuide,
     String? applianceType,
+    String? availableTimes,
   }) async {
     final response = await _api.post('/api/reports', data: {
       'landlord_id': ?landlordId,
@@ -58,6 +59,7 @@ class ReportService {
       'recommended_path': ?recommendedPath,
       'self_fix_guide': ?selfFixGuide,
       'appliance_type': ?applianceType,
+      'available_times': ?availableTimes,
     });
     final data = response.data as Map<String, dynamic>;
     return Report.fromJson(data['report'] as Map<String, dynamic>);
@@ -71,9 +73,14 @@ class ReportService {
   /// 채우게 둔다. 아직 임대인과 연결돼 있지 않으면 createReport 단계에서
   /// ApiException이 던져지는데, 메시지에 "설정에서 임대인 초대 코드를 먼저
   /// 입력"하라는 안내가 포함되어 있어 화면에 그대로 보여주면 된다.
+  ///
+  /// [availableTimes]는 세입자가 집에 있는 시간대(예: "평일 오후, 주말 오전").
+  /// 업체가 방문 시간을 제안할 때 참고하는 값이라 AI 분석에는 넘기지 않고
+  /// 저장만 한다.
   Future<Report> submitReport({
     required String description,
     List<File> photos = const [],
+    String? availableTimes,
     void Function(int completed, int total)? onUploadProgress,
   }) async {
     if (photos.isEmpty) {
@@ -96,6 +103,7 @@ class ReportService {
       recommendedPath: analysis['recommended_path']?.toString(),
       selfFixGuide: analysis['self_fix_guide']?.toString(),
       applianceType: analysis['appliance_type']?.toString(),
+      availableTimes: availableTimes,
     );
   }
 

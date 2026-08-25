@@ -15,6 +15,13 @@ import '../../widgets/app_bottom_nav.dart';
 const _whenOptions = ['오늘', '어제', '2~3일 전', '일주일 이상 전', '한 달 이상 전'];
 const _frequencyOptions = ['처음 발생', '가끔 발생', '자주 발생', '지속적으로 발생'];
 
+// 거주 가능 시간대. 백엔드 reports.available_times는 자유 텍스트라(db/009),
+// 여기서 고른 항목을 ", "로 이어 붙여 "평일 오후, 주말 오전" 형태로 보낸다.
+// 요일을 월~일로 쪼개면 21개가 되어 고르기 번거로워, 업체가 방문 일정을 잡는 데
+// 필요한 만큼만 평일/주말 × 오전/오후/저녁으로 묶었다.
+const _dayGroups = ['평일', '주말'];
+const _timeSlots = ['오전', '오후', '저녁'];
+
 /// 2단계: 추가 정보 입력. 실제 사진 업로드 + AI 분석(ReportService.analyzeReport)
 /// 호출은 원래 report_create_screen에 있던 로직을 그대로 이 화면으로 옮겨와 수행한다.
 class ReportAdditionalInfoScreen extends StatefulWidget {
@@ -32,6 +39,9 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
   String? _frequency;
   final _areaController = TextEditingController();
   bool _hasPriorRepair = true;
+  // "평일 오후"처럼 요일군과 시간대를 합친 문자열을 담는다. 선택 순서를 유지해야
+  // 보낸 문자열이 화면에서 고른 순서와 같아지므로 Set 대신 List를 쓴다.
+  final List<String> _availableTimes = [];
   File? _extraPhoto;
   final _picker = ImagePicker();
 
@@ -71,6 +81,7 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
       final Report result = await ReportService.instance.submitReport(
         description: detailLines.join('\n'),
         photos: allPhotos,
+        availableTimes: _availableTimes.isEmpty ? null : _availableTimes.join(', '),
         onUploadProgress: (completed, total) {
           if (!mounted) return;
           setState(() {
@@ -134,6 +145,56 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
           items: [for (final o in options) DropdownMenuItem(value: o, child: Text(o))],
           onChanged: onChanged,
           style: AppTextStyles.bodyRegular14(color: const Color(0xFF212121)),
+        ),
+      ),
+    );
+  }
+
+  Widget _availableTimesField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final day in _dayGroups) ...[
+          Text(day, style: AppTextStyles.bodyRegular14(color: AppColors.gray7)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final slot in _timeSlots) _timeChip('$day $slot'),
+            ],
+          ),
+          if (day != _dayGroups.last) const SizedBox(height: 14),
+        ],
+      ],
+    );
+  }
+
+  Widget _timeChip(String label) {
+    final selected = _availableTimes.contains(label);
+    return GestureDetector(
+      onTap: () => setState(() {
+        if (selected) {
+          _availableTimes.remove(label);
+        } else {
+          _availableTimes.add(label);
+        }
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.brandLight : AppColors.gray2,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: selected ? AppColors.brandLight : AppColors.gray3,
+          ),
+        ),
+        child: Text(
+          // 칩 안에서는 요일이 위 라벨로 이미 드러나므로 시간대만 보여준다.
+          label.split(' ').last,
+          style: AppTextStyles.bodyRegular14(
+            color: selected ? AppColors.white : const Color(0xFF212121),
+          ),
         ),
       ),
     );
@@ -224,6 +285,21 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                               ],
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _fieldCard(
+                      label: '방문 가능한 시간대 (선택)',
+                      field: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '집에 계신 시간을 골라 주세요. 수리업체가 방문 일정을 잡을 때 참고합니다.',
+                            style: AppTextStyles.bodyRegular12(color: AppColors.gray7),
+                          ),
+                          const SizedBox(height: 12),
+                          _availableTimesField(),
                         ],
                       ),
                     ),

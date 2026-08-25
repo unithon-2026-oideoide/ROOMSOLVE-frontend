@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "com.example.frontend"
-    compileSdk = flutter.compileSdkVersion
+    // flutter.compileSdkVersion은 36인데 flutter_secure_storage 11이 37 이상을 요구해
+    // :app:checkDebugAarMetadata 에서 빌드가 멈춘다. 그래서 고정한다.
+    // AGP 9.0.1이 "권장 최대는 36"이라고 경고하지만 빌드에는 문제가 없다.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
