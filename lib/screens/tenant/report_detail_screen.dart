@@ -80,6 +80,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final report = widget.report;
+    // 거절은 repair_status_timeline과 무관하게 reports.status 자체가 갖는 상태라
+    // 다른 무엇보다 우선한다 — 거절된 신고는 일정/진행 이력이 아예 없다.
+    final rejected = report.isRejected;
+    final badgeLabel = rejected
+        ? '거절됨'
+        : (_isCompleted ? '완료' : (_currentStatus != null ? _repairStatusLabel(_currentStatus!) : report.statusLabel));
+    final badgeColor = rejected ? AppColors.accentRed : AppColors.brandLight;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -103,9 +110,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
+                          decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(999)),
                           child: Text(
-                            _isCompleted ? '완료' : (_currentStatus ?? report.status ?? '처리 중'),
+                            badgeLabel,
                             style: AppTextStyles.bodyRegular12(color: AppColors.white),
                           ),
                         ),
@@ -152,33 +159,45 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     const SizedBox(height: 12),
                     const _TimelineCard(title: 'AI 판단 완료', done: true, subtitle: '원인 분석 및 긴급도 산정 완료'),
                     const SizedBox(height: 12),
-                    _TimelineCard(
-                      title: '임대인 승인',
-                      done: _isCompleted || report.status != null,
-                      subtitle: '수리 진행 승인 및 수리기사 배정 요청',
-                    ),
-                    const SizedBox(height: 12),
-                    if (_isLoadingTimeline)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(child: CircularProgressIndicator()),
+                    if (rejected)
+                      const _TimelineCard(
+                        title: '임대인 거절',
+                        done: false,
+                        rejected: true,
+                        subtitle: '임대인이 이 신고를 거절했습니다. 자세한 사유는 임대인에게 문의해주세요.',
                       )
-                    else if (_timeline != null && _timeline!.isNotEmpty)
-                      for (int i = 0; i < _timeline!.length; i++) ...[
-                        _TimelineCard(
-                          title: _repairStatusLabel(_timeline![i]['status']?.toString() ?? ''),
-                          done: true,
-                          subtitle: _formatDateTime(_timeline![i]['changed_at']?.toString() ?? ''),
-                        ),
-                        const SizedBox(height: 12),
-                      ]
-                    else
+                    else ...[
                       _TimelineCard(
-                        title: '수리 완료 확인',
-                        done: _isCompleted,
-                        current: !_isCompleted,
-                        subtitle: _isCompleted ? '수리가 완료되었습니다.' : '일정 확정 후 진행',
+                        title: '임대인 승인',
+                        done: report.status == 'approved' || _isCompleted,
+                        current: report.status == null || report.status == 'pending',
+                        subtitle: report.status == 'approved' || _isCompleted
+                            ? '수리 진행이 승인되어 수리기사 배정 요청이 접수되었습니다.'
+                            : '임대인의 승인을 기다리고 있습니다.',
                       ),
+                      const SizedBox(height: 12),
+                      if (_isLoadingTimeline)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_timeline != null && _timeline!.isNotEmpty)
+                        for (int i = 0; i < _timeline!.length; i++) ...[
+                          _TimelineCard(
+                            title: _repairStatusLabel(_timeline![i]['status']?.toString() ?? ''),
+                            done: true,
+                            subtitle: _formatDateTime(_timeline![i]['changed_at']?.toString() ?? ''),
+                          ),
+                          const SizedBox(height: 12),
+                        ]
+                      else
+                        _TimelineCard(
+                          title: '수리 완료 확인',
+                          done: _isCompleted,
+                          current: !_isCompleted,
+                          subtitle: _isCompleted ? '수리가 완료되었습니다.' : '일정 확정 후 진행',
+                        ),
+                    ],
                     if (report.photoUrls.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text('신고 사진', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
@@ -263,16 +282,27 @@ class _Row extends StatelessWidget {
 }
 
 class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.title, required this.subtitle, required this.done, this.current = false});
+  const _TimelineCard({
+    required this.title,
+    required this.subtitle,
+    required this.done,
+    this.current = false,
+    this.rejected = false,
+  });
   final String title;
   final String subtitle;
   final bool done;
   final bool current;
+  final bool rejected;
 
   @override
   Widget build(BuildContext context) {
-    final color = done ? AppColors.accentGreen : (current ? AppColors.accentYellow : AppColors.gray3);
-    final icon = done ? Icons.check : (current ? Icons.arrow_forward : Icons.circle_outlined);
+    final color = rejected
+        ? AppColors.accentRed
+        : done
+            ? AppColors.accentGreen
+            : (current ? AppColors.accentYellow : AppColors.gray3);
+    final icon = rejected ? Icons.close : (done ? Icons.check : (current ? Icons.arrow_forward : Icons.circle_outlined));
 
     return Container(
       width: double.infinity,
@@ -290,7 +320,7 @@ class _TimelineCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                child: Icon(icon, size: 14, color: done || current ? AppColors.white : AppColors.gray8),
+                child: Icon(icon, size: 14, color: done || current || rejected ? AppColors.white : AppColors.gray8),
               ),
               const SizedBox(width: 8),
               Expanded(child: Text(title, style: AppTextStyles.bodySemiBold16(color: AppColors.gray8))),

@@ -39,15 +39,14 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
     }
   }
 
-  bool _isCompleted(Report r) => r.status == 'completed' || r.status == 'done' || r.status == '완료';
-  bool _isWaiting(Report r) => r.status == null || r.status!.isEmpty || r.status == 'pending' || r.status == '대기';
-
   @override
   Widget build(BuildContext context) {
     final reports = _reports;
-    final inProgress = reports?.where((r) => !_isCompleted(r) && !_isWaiting(r)).toList() ?? const [];
-    final completed = reports?.where(_isCompleted).toList() ?? const [];
-    final waiting = reports?.where(_isWaiting).toList() ?? const [];
+    // 거절된 신고는 더 진행될 게 없는 종결 상태라, 임대인 쪽 그룹핑
+    // (landlord_requests_screen.dart의 _statusGroup)과 맞춰 완료 묶음으로 센다.
+    final inProgress = reports?.where((r) => !r.isCompleted && !r.isRejected && !r.isWaiting).toList() ?? const [];
+    final completed = reports?.where((r) => r.isCompleted || r.isRejected).toList() ?? const [];
+    final waiting = reports?.where((r) => r.isWaiting).toList() ?? const [];
     final user = context.watch<AuthProvider>().currentUser;
     final userName = user?.name ?? user?.email.split('@').first ?? '사용자';
 
@@ -215,7 +214,7 @@ class _ReportProgressCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  report.status ?? '처리 대기 중',
+                  report.statusLabel,
                   style: AppTextStyles.bodyRegular12(color: AppColors.gray8),
                 ),
               ],

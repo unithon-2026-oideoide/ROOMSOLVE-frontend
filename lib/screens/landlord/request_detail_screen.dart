@@ -106,8 +106,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               // 앱 전역 테마의 minimumSize(가로 무한대)가 AlertDialog.actions 같은
-              // Row류 레이아웃 안에서 "infinite width" 레이아웃 예외를 일으켜 덮어쓴다.
-              minimumSize: Size.zero,
+              // Row류 레이아웃 안에서 "infinite width" 레이아웃 예외를 일으켰었다.
+              // Size.zero로 덮어써서 크래시는 막았지만, 그러면 이 버튼만 옆의 "취소"
+              // (OutlinedButton 기본 최소 크기 64x36)보다 훨씬 작게 쪼그라들어 두
+              // 버튼 높이가 어긋나 보였다. OutlinedButton과 같은 최소 크기를 줘서
+              // 크래시 없이 나란히 정렬되게 한다.
+              minimumSize: const Size(64, 36),
               backgroundColor: const Color(0xFFD93333),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 0,
