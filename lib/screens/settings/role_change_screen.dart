@@ -55,7 +55,17 @@ class _RoleChangeScreenState extends State<RoleChangeScreen> {
     });
     try {
       await context.read<AuthProvider>().updateRole(selected);
-      if (mounted) context.go(homePathForRole(selected));
+      if (mounted) {
+        // AuthProvider.updateRole()의 notifyListeners()가 router.dart의
+        // refreshListenable을 통해 GoRouter를 한 번 자동으로 리프레시시킨다.
+        // 그 직후 같은 프레임에서 context.go()로 또 라우트를 바꾸면 두 번의
+        // 라우터 변경이 겹쳐서 '!semantics.parentDataDirty'로 죽을 수 있다.
+        // 다음 프레임으로 미뤄 자동 리프레시가 먼저 끝나게 한다.
+        final target = homePathForRole(selected);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go(target);
+        });
+      }
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (e) {
