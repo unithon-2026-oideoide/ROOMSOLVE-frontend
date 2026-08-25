@@ -76,13 +76,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   Future<void> _selectQuote(Quote quote) async {
     setState(() => _isSubmitting = true);
     try {
-      // 승인 API를 따로 부르지 않는다. 서버가 selected 처리 안에서 신고를 approved로
-      // 올린다(quotes.controller.ts updateQuoteStatus). 여기서 또 부르면 같은 상태를
-      // 두 곳에서 쓰게 되고, 두 번째 호출만 실패했을 때 상태를 되짚기 어려워진다.
       await QuoteService.instance.updateQuoteStatus(quoteId: quote.id, status: 'selected');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${quote.vendorName ?? '수리업체'} 견적을 선택하여 승인했습니다.')),
+          SnackBar(content: Text('${quote.vendorName ?? '수리업체'} 견적을 선택하여 수리 승인했습니다.')),
         );
         context.pop();
       }

@@ -26,9 +26,9 @@ const Map<String, String> severityLabels = {
 /// 수리 요청 상태 영문 코드 ↔ 한글 명칭 매핑.
 const Map<String, String> requestStatusLabels = {
   'pending': '승인 대기',
-  'approved': '승인됨',
+  'approved': '수리 대기',
   'rejected': '거절됨',
-  'in_progress': '진행 중',
+  'in_progress': '수리 진행 중',
   'completed': '완료',
   'done': '완료',
 };

@@ -53,7 +53,7 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
     }
   }
 
-  // 이 화면의 섹션 헤더(승인 대기/진행 중/완료)를 나누는 용도의 그룹핑이다.
+  // 이 화면의 섹션 헤더(승인 대기/수리 대기/완료)를 나누는 용도의 그룹핑이다.
   // 개별 뱃지 문구/색은 category_helpers.dart의 requestStatusLabel/requestStatusColor를
   // 따로 써서 request_detail_screen.dart와 정확히 같은 표시를 보장한다 — 예전에는
   // 이 그룹명을 뱃지에도 그대로 썼는데, 그러면 rejected가 이 화면에서는 "완료"(회색)로,
@@ -65,14 +65,14 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
   String _statusGroup(Map<String, dynamic> r) {
     final status = r['status']?.toString().toLowerCase() ?? '';
     if (status == 'rejected' || status.contains('완료') || status == 'completed' || status == 'done') return '완료';
-    if (status.contains('진행') || status == 'in_progress' || status == 'approved') return '진행 중';
+    if (status.contains('수리') || status.contains('진행') || status == 'in_progress' || status == 'approved') return '수리 대기';
     return '승인 대기';
   }
 
   @override
   Widget build(BuildContext context) {
     final all = _requests ?? const [];
-    final grouped = <String, List<Map<String, dynamic>>>{'승인 대기': [], '진행 중': [], '완료': []};
+    final grouped = <String, List<Map<String, dynamic>>>{'승인 대기': [], '수리 대기': [], '완료': []};
     for (final r in all) {
       final group = _statusGroup(r);
       if (_filter != '전체' && _filter != group) continue;
@@ -88,10 +88,6 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,
-                // RefreshIndicator의 직접 자식은 항상 같은 Scrollable(ListView)이어야
-                // 한다. 상태별로 다른 위젯으로 통째로 바꿔치기하면 Flutter 렌더링
-                // 엔진이 '!semantics.parentDataDirty' assertion으로 죽는 경우가 있어,
-                // 상태별 콘텐츠도 전부 ListView 안의 아이템으로 둔다.
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                   children: _isLoading
@@ -113,7 +109,7 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              for (final group in ['승인 대기', '진행 중', '완료'])
+                              for (final group in ['승인 대기', '수리 대기', '완료'])
                                 if (grouped[group]!.isNotEmpty) ...[
                                   Text(group, style: AppTextStyles.bodySemiBold16(color: AppColors.black)),
                                   const SizedBox(height: 8),
@@ -129,11 +125,14 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                                   ],
                                   const SizedBox(height: 12),
                                 ],
-                              if (all.isEmpty)
+                              if (grouped.values.every((list) => list.isEmpty))
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 40),
                                   child: Center(
-                                    child: Text('등록된 수리 요청이 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+                                    child: Text(
+                                      _filter == '전체' ? '수리 요청이 없습니다.' : '$_filter 상태의 요청이 없습니다.',
+                                      style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
+                                    ),
                                   ),
                                 ),
                             ],
@@ -153,7 +152,7 @@ class _FilterDropdown extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
 
-  static const _options = ['전체', '승인 대기', '진행 중', '완료'];
+  static const _options = ['전체', '승인 대기', '수리 대기', '완료'];
 
   @override
   Widget build(BuildContext context) {
