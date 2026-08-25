@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "알림 설정 화면". 알림 설정 전용 백엔드 API가 없어 로컬 상태만 다룬다.
 class NotificationSettingsScreen extends StatefulWidget {
@@ -95,7 +96,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('알림 설정', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '알림 설정'),
                     const SizedBox(height: 12),
                     Text('수리 진행 알림', style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
                     const SizedBox(height: 12),

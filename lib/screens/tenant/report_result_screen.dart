@@ -8,6 +8,7 @@ import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 String? _recommendedPathToApiString(RecommendedPath path) {
   switch (path) {
@@ -157,7 +158,7 @@ class _SelfFixViewState extends State<_SelfFixView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('자가 조치 가이드', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const ScreenHeader(title: '자가 조치 가이드'),
           const SizedBox(height: 20),
           Expanded(
             child: Container(
@@ -361,7 +362,7 @@ class _ManufacturerAsViewState extends State<_ManufacturerAsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('제조사 AS', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const ScreenHeader(title: '제조사 AS'),
           const SizedBox(height: 8),
           Text(
             '해당 가전의 제조사 공식 서비스 센터에 바로 연결할 수 있습니다.',
@@ -489,7 +490,7 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('전문 업체 매칭', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+          const ScreenHeader(title: '전문 업체 매칭'),
           const SizedBox(height: 8),
           Text(
             '신고하신 문제를 검토했습니다.\n아래 절차에 따라 수리가 진행됩니다.',

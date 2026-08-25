@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "계정 정보 화면".
 class AccountInfoScreen extends StatelessWidget {
@@ -30,7 +31,7 @@ class AccountInfoScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('계정 정보', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '계정 정보'),
                     const SizedBox(height: 16),
                     _Field(label: '사용자 유형', value: roleLabel(auth.role)),
                     const SizedBox(height: 20),

@@ -9,6 +9,7 @@ import '../../services/quote_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "임대인 - 수리요청 상세" 레이아웃(요청 개요/AI 판단 요약/수리업체 제안 견적/
 /// 타임라인/사진/요청 내용)에 "임대인 - 수리요청" 화면의 승인·거절 액션을
@@ -198,22 +199,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.arrow_back, color: AppColors.black),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: Text('수리 요청 상세', style: AppTextStyles.subtitleBold22(color: AppColors.black))),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(999)),
-                child: Text(_statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
-              ),
-            ],
+          ScreenHeader(
+            title: '수리 요청 상세',
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(999)),
+              child: Text(_statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+            ),
           ),
           const SizedBox(height: 16),
           _Card(

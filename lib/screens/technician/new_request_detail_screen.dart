@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/quote_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/screen_header.dart';
 
 /// "새 일감 상세 화면". 견적(가격 + 방문 가능 시간)을 POST /api/quotes로 낸다.
 /// job_detail_screen.dart와 달리 POST /api/repair/schedule은 호출하지 않는다 —
@@ -116,7 +117,7 @@ class _NewRequestDetailScreenState extends State<NewRequestDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('새 일감 상세', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '새 일감 상세'),
                     const SizedBox(height: 4),
                     Text('접수일: ${formatDateTime(request.createdAt?.toIso8601String())}', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
                     const SizedBox(height: 16),

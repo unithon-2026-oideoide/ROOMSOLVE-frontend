@@ -8,6 +8,7 @@ import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "수리 완료 확인 화면". "확인 및 전송"이 POST /api/repair/status로
 /// {report_id: job.id, status: 'done'}을 기록한다.
@@ -59,7 +60,7 @@ class _RepairCompleteScreenState extends State<RepairCompleteScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('작업 완료 처리', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '작업 완료 처리'),
                     const SizedBox(height: 4),
                     Text('신청번호 #${job.id}', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
                     const SizedBox(height: 20),

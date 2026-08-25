@@ -10,6 +10,7 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 const _whenOptions = ['오늘', '어제', '2~3일 전', '일주일 이상 전', '한 달 이상 전'];
 const _frequencyOptions = ['처음 발생', '가끔 발생', '자주 발생', '지속적으로 발생'];
@@ -212,7 +213,7 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('추가 정보 입력', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '추가 정보 입력'),
                     const SizedBox(height: 20),
                     Text(
                       'AI가 문제 상황을 더 정확히 파악할 수 있도록 아래 항목을 답해 주세요.',

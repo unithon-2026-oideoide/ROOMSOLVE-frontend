@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// 1단계: 문제 설명 + 사진 첨부. "다음 단계로"에서 실제 업로드/AI 분석은
 /// 하지 않고, 입력값을 들고 2단계(추가 정보 입력 화면)로 넘어간다.
@@ -136,7 +137,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('문제 신고', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '문제 신고'),
                     const SizedBox(height: 20),
                     Text(
                       '발생한 문제를 사진과 함께 설명해 주세요. 정확한 내용이 빠른 해결에 도움이 됩니다.',

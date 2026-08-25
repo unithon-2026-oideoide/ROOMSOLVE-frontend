@@ -10,6 +10,7 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "새 일감 목록 화면". GET /api/vendors/requests(technicianId=)로, 업체의 전문
 /// 분야에 해당하는 신고를 가져온다. 배정 작업 목록(이미 repair_schedule이
@@ -64,7 +65,7 @@ class _NewRequestListScreenState extends State<NewRequestListScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                   children: [
-                    Text('새 일감', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '새 일감'),
                     const SizedBox(height: 4),
                     Text(
                       '내 전문 분야에 해당하고 아직 견적을 내지 않은 신고입니다.',

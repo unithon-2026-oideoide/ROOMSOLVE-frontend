@@ -6,6 +6,7 @@ import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 class AutoApprovalSettingScreen extends StatefulWidget {
   const AutoApprovalSettingScreen({super.key});
@@ -151,16 +152,18 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: ScreenHeader(title: '자동처리 한도 설정'),
+            ),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('자동처리 한도 설정', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
-                    const SizedBox(height: 8),
                     Text(
                       '수리 요청이 아래 조건을 모두 충족하면 임대인 승인 없이 자동으로 처리됩니다.',
                       style: AppTextStyles.bodyRegular14(color: AppColors.gray8),

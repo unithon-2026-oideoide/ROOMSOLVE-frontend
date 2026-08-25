@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "임대인 - 승인 거절 안내": request_detail_screen에서 거절 처리(approveRequest
 /// (approve: false))가 성공한 뒤 보여주는 완료 화면.
@@ -27,7 +28,7 @@ class RequestRejectedScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('요청 거절 완료', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '요청 거절 완료'),
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,

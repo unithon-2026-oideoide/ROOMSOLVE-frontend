@@ -192,51 +192,42 @@ class _ReportProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: AppColors.dropShadow,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    // 예전엔 우측에 별도 "자세히 보기" 버튼이 있었다. 카드 전체를 탭 영역으로
+    // 넓히고, 버튼 대신 눈에 덜 띄는 안내 문구로 바꿨다 — 탭 가능한 영역이
+    // 훨씬 넓어지고, 카드마다 파란 버튼이 반복되는 것보다 덜 시끄럽다.
+    return GestureDetector(
+      onTap: () => context.push('/tenant/reports/result', extra: report),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: AppColors.dropShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              formatReportTitle(report.category, report.description),
+              style: AppTextStyles.bodySemiBold16(color: AppColors.gray8),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              report.statusLabel,
+              style: AppTextStyles.bodyRegular12(color: AppColors.gray8),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  formatReportTitle(report.category, report.description),
-                  style: AppTextStyles.bodySemiBold16(color: AppColors.gray8),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  report.statusLabel,
-                  style: AppTextStyles.bodyRegular12(color: AppColors.gray8),
-                ),
+                Text('탭하여 자세히 보기', style: AppTextStyles.bodyRegular12(color: AppColors.gray5)),
+                const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.gray5),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            height: 25,
-            child: ElevatedButton(
-              onPressed: () => context.push('/tenant/reports/result', extra: report),
-              style: ElevatedButton.styleFrom(
-                // 앱 전역 테마의 minimumSize(가로 무한대)가 Expanded 없이 Row에 바로
-                // 들어간 이 버튼에서 "infinite width" 레이아웃 예외를 일으켜 덮어쓴다.
-                minimumSize: Size.zero,
-                backgroundColor: AppColors.brandLight,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                elevation: 0,
-              ),
-              child: Text('자세히 보기', style: AppTextStyles.bodyRegular14(color: AppColors.gray1)),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

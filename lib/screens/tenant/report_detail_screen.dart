@@ -8,6 +8,7 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 String _formatDateTime(String isoString) {
   final dt = DateTime.tryParse(isoString);
@@ -158,23 +159,16 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            formatReportTitle(report.category, report.description),
-                            style: AppTextStyles.subtitleBold22(color: AppColors.black),
-                          ),
+                    ScreenHeader(
+                      title: formatReportTitle(report.category, report.description),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(999)),
+                        child: Text(
+                          badgeLabel,
+                          style: AppTextStyles.bodyRegular12(color: AppColors.white),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(999)),
-                          child: Text(
-                            badgeLabel,
-                            style: AppTextStyles.bodyRegular12(color: AppColors.white),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(

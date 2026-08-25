@@ -5,6 +5,7 @@ import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "임대인 - 호실 관리 화면"
 class LandlordUnitsScreen extends StatefulWidget {
@@ -74,16 +75,18 @@ class _LandlordUnitsScreenState extends State<LandlordUnitsScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                   children: _isLoading
                       ? const [
+                          ScreenHeader(title: '호실 관리'),
                           SizedBox(height: 80),
                           Center(child: CircularProgressIndicator()),
                         ]
                       : _errorMessage != null
                           ? [
+                              const ScreenHeader(title: '호실 관리'),
                               const SizedBox(height: 80),
                               Center(child: Text(_errorMessage!, style: AppTextStyles.bodyRegular14(color: AppColors.accentRed))),
                             ]
                           : [
-                              Text('호실 관리', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                              const ScreenHeader(title: '호실 관리'),
                               const SizedBox(height: 4),
                               Text('관리 중인 호실 ${units.length}개', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
                               const SizedBox(height: 12),

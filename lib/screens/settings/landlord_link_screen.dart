@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "임대인 연결" 화면. 세입자가 임대인에게 받은 초대 코드를 입력해
 /// PATCH /api/users/link-landlord를 호출한다. 연결돼야 신고 접수(POST
@@ -75,7 +76,7 @@ class _LandlordLinkScreenState extends State<LandlordLinkScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('임대인 연결', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                    const ScreenHeader(title: '임대인 연결'),
                     const SizedBox(height: 8),
                     Text(
                       '임대인에게 받은 초대 코드를 입력하면, 이후 신고할 때 자동으로 해당 임대인에게 접수됩니다.',

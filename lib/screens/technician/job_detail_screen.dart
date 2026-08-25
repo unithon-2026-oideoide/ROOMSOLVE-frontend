@@ -5,6 +5,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../models/technician_job.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/screen_header.dart';
 
 /// "작업 상세 화면". technician_job_loader.dart를 통해 만들어진 TechnicianJob은
 /// 정의상 이미 repair_schedule이 있는(=배정이 끝난) 일감이다. 이 업체가 이
@@ -38,15 +39,13 @@ class JobDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text('작업 상세', style: AppTextStyles.subtitleBold22(color: AppColors.black))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                          child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
-                        ),
-                      ],
+                    ScreenHeader(
+                      title: '작업 상세',
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
+                        child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text('요청 접수일: ${job.receivedAt}', style: AppTextStyles.bodyRegular12(color: AppColors.gray6)),
