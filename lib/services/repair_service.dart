@@ -45,16 +45,13 @@ class RepairService {
 
   /// POST /api/repair/status — 진행 상태 이력 한 줄 추가.
   /// status는 자유 문자열이며 scheduled/confirmed/in_progress/done 정도를 상정.
-  /// 완료(done) 처리 시 photo_url을 함께 전송할 수 있다.
   Future<Map<String, dynamic>> postStatus({
     required String reportId,
     required String status,
-    String? photoUrl,
   }) async {
     final response = await _api.post('/api/repair/status', data: {
       'report_id': reportId,
       'status': status,
-      if (photoUrl != null && photoUrl.isNotEmpty) 'photo_url': photoUrl,
     });
     final data = response.data as Map<String, dynamic>;
     return data['entry'] as Map<String, dynamic>;
