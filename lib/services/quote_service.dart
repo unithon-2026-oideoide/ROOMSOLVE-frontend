@@ -21,14 +21,15 @@ class QuoteService {
     required String reportId,
     required String vendorId,
     required num price,
+    DateTime? proposedVisitAt,
   }) async {
     // 백엔드는 report_id/vendor_id(snake_case)를 요구한다(quotes.controller.ts
-    // createQuote) — camelCase로 보내면 항상 400 "report_id, vendor_id는
-    // 필수입니다"로 거부된다.
+    // createQuote). proposed_visit_at(방문 가능 시간)을 함께 전송한다.
     final response = await _api.post('/api/quotes', data: {
       'report_id': reportId,
       'vendor_id': vendorId,
       'price': price,
+      if (proposedVisitAt != null) 'proposed_visit_at': proposedVisitAt.toUtc().toIso8601String(),
     });
     final data = response.data as Map<String, dynamic>;
     return Quote.fromJson(data['quote'] as Map<String, dynamic>);

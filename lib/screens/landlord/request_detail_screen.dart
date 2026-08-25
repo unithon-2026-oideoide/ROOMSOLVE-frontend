@@ -3,16 +3,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/category_helpers.dart';
+import '../../models/quote.dart';
 import '../../services/landlord_service.dart';
+import '../../services/quote_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_top_bar.dart';
 
-/// "임대인 - 수리요청 상세" 레이아웃(요청 개요/AI 판단 요약/비용·업체 정보/
+/// "임대인 - 수리요청 상세" 레이아웃(요청 개요/AI 판단 요약/수리업체 제안 견적/
 /// 타임라인/사진/요청 내용)에 "임대인 - 수리요청" 화면의 승인·거절 액션을
-/// 합쳐서 하나의 상세 화면으로 구성한다. 요청이 이미 승인/거절된 경우
-/// 처리 결정 섹션은 숨긴다.
+/// 합쳐서 하나의 상세 화면으로 구성한다.
 class RequestDetailScreen extends StatefulWidget {
   final String requestId;
 
@@ -24,6 +25,7 @@ class RequestDetailScreen extends StatefulWidget {
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
   Map<String, dynamic>? _detail;
+  List<Quote> _quotes = [];
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -48,8 +50,14 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     });
     try {
       final result = await LandlordService.instance.getRequestDetail(widget.requestId);
+      List<Quote> quotes = [];
+      try {
+        quotes = await QuoteService.instance.getQuotes(reportId: widget.requestId);
+      } catch (_) {}
+
       setState(() {
         _detail = result;
+        _quotes = quotes;
         _isLoading = false;
       });
     } on ApiException catch (e) {
@@ -62,6 +70,26 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         _errorMessage = '상세 정보를 불러오지 못했습니다: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _selectQuote(Quote quote) async {
+    setState(() => _isSubmitting = true);
+    try {
+      await QuoteService.instance.updateQuoteStatus(quoteId: quote.id, status: 'selected');
+      await LandlordService.instance.approveRequest(id: widget.requestId, approve: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${quote.vendorName ?? '수리업체'} 견적을 선택하여 승인했습니다.')),
+        );
+        context.pop();
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('처리 중 오류가 발생했습니다: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -221,6 +249,30 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          _Card(
+            title: '수리업체 제안 견적',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_quotes.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text('제출된 업체 견적이 없습니다.', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
+                  )
+                else
+                  for (final quote in _quotes) ...[
+                    _QuoteItem(
+                      quote: quote,
+                      canSelect: _isPending && quote.status != 'rejected' && quote.status != 'selected',
+                      isSubmitting: _isSubmitting,
+                      onSelect: () => _selectQuote(quote),
+                    ),
+                    if (quote != _quotes.last) const Divider(height: 16, color: Color(0xFFEEEEEE)),
+                  ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           if ((d['photo_urls'] as List?)?.isNotEmpty ?? false) ...[
             Text('신고 첨부 사진', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
             const SizedBox(height: 8),
@@ -368,6 +420,125 @@ class _Chip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(color: AppColors.gray3, borderRadius: BorderRadius.circular(999)),
       child: Text(text, style: AppTextStyles.bodyRegular12(color: AppColors.gray8)),
+    );
+  }
+}
+
+class _QuoteItem extends StatelessWidget {
+  const _QuoteItem({
+    required this.quote,
+    required this.canSelect,
+    required this.isSubmitting,
+    required this.onSelect,
+  });
+
+  final Quote quote;
+  final bool canSelect;
+  final bool isSubmitting;
+  final VoidCallback onSelect;
+
+  String get _statusText {
+    switch (quote.status.toLowerCase()) {
+      case 'rejected':
+        return '거절됨';
+      case 'selected':
+        return '선택됨';
+      case 'recommended':
+        return '추천';
+      case 'pending':
+      default:
+        return '제출됨';
+    }
+  }
+
+  Color get _statusBadgeColor {
+    switch (quote.status.toLowerCase()) {
+      case 'rejected':
+        return AppColors.accentRed;
+      case 'selected':
+        return AppColors.brandMain;
+      case 'recommended':
+        return AppColors.accentGreen;
+      case 'pending':
+      default:
+        return AppColors.gray5;
+    }
+  }
+
+  String _formatPrice(num? price) {
+    if (price == null) return '-';
+    final str = price.toInt().toString();
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      buffer.write(str[i]);
+      count++;
+      if (count % 3 == 0 && i != 0) buffer.write(',');
+    }
+    return '${buffer.toString().split('').reversed.join()}원';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visitTimeStr = quote.proposedVisitAt != null
+        ? formatDateTime(quote.proposedVisitAt!.toIso8601String())
+        : '방문 시간 미지정';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      quote.vendorName ?? '수리업체',
+                      style: AppTextStyles.bodySemiBold14(color: AppColors.black),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _statusBadgeColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _statusText,
+                        style: AppTextStyles.captionLight12(color: AppColors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '견적 금액: ${_formatPrice(quote.price)}',
+                  style: AppTextStyles.bodySemiBold14(color: AppColors.brandDark),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '방문 가능 시간: $visitTimeStr',
+                  style: AppTextStyles.bodyRegular12(color: AppColors.gray6),
+                ),
+              ],
+            ),
+          ),
+          if (canSelect)
+            ElevatedButton(
+              onPressed: isSubmitting ? null : onSelect,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandMain,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text('업체 선택', style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+            ),
+        ],
+      ),
     );
   }
 }

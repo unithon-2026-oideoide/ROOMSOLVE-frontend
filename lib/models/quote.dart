@@ -5,6 +5,7 @@ class Quote {
   final String? vendorName;
   final num? price;
   final String status;
+  final DateTime? proposedVisitAt;
   final DateTime? createdAt;
 
   Quote({
@@ -14,6 +15,7 @@ class Quote {
     this.vendorName,
     this.price,
     this.status = 'pending',
+    this.proposedVisitAt,
     this.createdAt,
   });
 
@@ -30,6 +32,7 @@ class Quote {
       vendorName: vendor?['name']?.toString(),
       price: json['price'] as num?,
       status: json['status']?.toString() ?? 'pending',
+      proposedVisitAt: json['proposed_visit_at'] != null ? DateTime.tryParse(json['proposed_visit_at'].toString()) : null,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
     );
   }
