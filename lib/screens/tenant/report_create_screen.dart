@@ -41,26 +41,46 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   Future<void> _showAddPhotoSheet() async {
     await showModalBottomSheet<void>(
       context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('카메라로 촬영'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('갤러리에서 선택'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(color: AppColors.gray3, borderRadius: BorderRadius.circular(999)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('사진 추가', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+              const SizedBox(height: 16),
+              _PhotoSourceTile(
+                icon: Icons.camera_alt_rounded,
+                label: '카메라로 촬영',
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: 10),
+              _PhotoSourceTile(
+                icon: Icons.photo_library_rounded,
+                label: '갤러리에서 선택',
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -204,6 +224,46 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
             ),
             const AppBottomNav(current: AppBottomNavTab.reports),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 사진 추가 시트("카메라로 촬영"/"갤러리에서 선택")의 옵션 한 줄.
+/// 기본 ListTile 대신 앱 다른 곳과 같은 둥근 카드 + 브랜드색 원형 아이콘으로
+/// 통일했다.
+class _PhotoSourceTile extends StatelessWidget {
+  const _PhotoSourceTile({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.gray1,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: AppColors.brandMain.withValues(alpha: 0.1), shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 18, color: AppColors.brandMain),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: AppTextStyles.bodySemiBold16(color: AppColors.gray8))),
+              Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.gray5),
+            ],
+          ),
         ),
       ),
     );
