@@ -237,7 +237,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  d['self_fix_guide']?.toString() ?? d['description']?.toString() ?? '분석 정보가 없습니다.',
+                  d['ai_summary']?.toString() ?? d['self_fix_guide']?.toString() ?? '분석 정보가 없습니다.',
                   style: AppTextStyles.bodyRegular14(color: AppColors.gray7),
                 ),
                 const SizedBox(height: 8),

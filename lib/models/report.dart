@@ -25,6 +25,12 @@ class Report {
   final List<String> photoUrls;
   final RecommendedPath recommendedPath;
   final String? selfFixGuide;
+  /// recommended_path와 무관하게 항상 채워지는 AI 진단 요약(1~3문장). selfFixGuide는
+  /// self_fix 경로일 때만 있는 "어떻게 고치는지" 가이드이고, 이건 모든 경로 공통의
+  /// "무엇이 왜 문제인지" 판단 문장이다. "AI 판단" 카드는 이 값을 우선 써야 한다 —
+  /// 이게 없어서 예전에는 self_fix가 아닌 신고에 세입자가 입력한 description을
+  /// 그대로 "AI 판단"인 것처럼 보여주는 문제가 있었다.
+  final String? aiSummary;
   final String? applianceType;
   final String? status;
   final DateTime? createdAt;
@@ -38,6 +44,7 @@ class Report {
     this.photoUrls = const [],
     this.recommendedPath = RecommendedPath.unknown,
     this.selfFixGuide,
+    this.aiSummary,
     this.applianceType,
     this.status,
     this.createdAt,
@@ -53,6 +60,7 @@ class Report {
       photoUrls: (json['photo_urls'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       recommendedPath: recommendedPathFromString(json['recommended_path']?.toString()),
       selfFixGuide: json['self_fix_guide']?.toString(),
+      aiSummary: json['ai_summary']?.toString(),
       applianceType: json['appliance_type']?.toString(),
       status: json['status']?.toString(),
       // 백엔드 컬럼명은 created_at(snake_case)이다. camelCase로 읽으면 항상 null이 되는
