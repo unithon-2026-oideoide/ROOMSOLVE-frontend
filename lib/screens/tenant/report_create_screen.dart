@@ -77,48 +77,52 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
     );
   }
 
+  // 사진 칸 한 변의 길이. 예전엔 Row 안에서 Expanded + AspectRatio(1)로
+  // 그렸는데, 사진이 0~1장일 때 Expanded가 남는 가로 폭을 전부 차지해서
+  // 정사각형이 화면 너비만큼 커지는 문제가 있었다. 고정 크기로 바꾸고
+  // Wrap으로 배치하면 사진이 몇 장이든 같은 크기를 유지한다.
+  static const double _tileSize = 84;
+
   Widget _photoTile(int index) {
-    return Expanded(
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.file(_photos[index], fit: BoxFit.cover),
-            ),
-            Positioned(
-              top: 2,
-              right: 2,
-              child: GestureDetector(
-                onTap: () => setState(() => _photos.removeAt(index)),
-                child: const CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.black54,
-                  child: Icon(Icons.close, size: 14, color: Colors.white),
-                ),
+    return SizedBox(
+      width: _tileSize,
+      height: _tileSize,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(_photos[index], fit: BoxFit.cover),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: () => setState(() => _photos.removeAt(index)),
+              child: const CircleAvatar(
+                radius: 10,
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.close, size: 14, color: Colors.white),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _addTile() {
-    return Expanded(
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: GestureDetector(
-          onTap: _showAddPhotoSheet,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.gray2,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.add, color: AppColors.gray6),
+    return SizedBox(
+      width: _tileSize,
+      height: _tileSize,
+      child: GestureDetector(
+        onTap: _showAddPhotoSheet,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.gray2,
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Icon(Icons.add, color: AppColors.gray6),
         ),
       ),
     );
@@ -144,35 +148,31 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                       style: AppTextStyles.bodyRegular16(color: AppColors.gray8),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.gray2,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: AppColors.dropShadow,
-                      ),
-                      padding: const EdgeInsets.all(12),
-                      child: TextField(
-                        controller: _descriptionController,
-                        maxLines: 4,
-                        minLines: 3,
-                        style: AppTextStyles.bodyRegular16(color: AppColors.black),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '어떤 문제가 발생했나요?',
-                          hintStyle: AppTextStyles.bodyRegular16(color: AppColors.gray6),
+                    TextField(
+                      controller: _descriptionController,
+                      maxLines: 4,
+                      minLines: 3,
+                      style: AppTextStyles.bodyRegular16(color: AppColors.black),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: AppColors.gray1,
+                        hintText: '어떤 문제가 발생했나요?',
+                        hintStyle: AppTextStyles.bodyRegular16(color: AppColors.gray6),
+                        contentPadding: const EdgeInsets.all(14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Text('사진·영상 첨부', style: AppTextStyles.subtitleBold18(color: const Color(0xFF212121))),
                     const SizedBox(height: 20),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        for (int i = 0; i < _photos.length; i++) ...[
-                          _photoTile(i),
-                          if (i != _photos.length - 1) const SizedBox(width: 12),
-                        ],
-                        if (_photos.isNotEmpty) const SizedBox(width: 12),
+                        for (int i = 0; i < _photos.length; i++) _photoTile(i),
                         _addTile(),
                       ],
                     ),
