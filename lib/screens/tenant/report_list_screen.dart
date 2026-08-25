@@ -8,6 +8,7 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/status_filter_row.dart';
 
 /// "신고 내역 화면"
 class ReportListScreen extends StatefulWidget {
@@ -105,24 +106,10 @@ class _ReportListScreenState extends State<ReportListScreen> {
                           : [
                               Text('신고 내역', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                               const SizedBox(height: 12),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.gray1,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: AppColors.dropShadow,
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    isExpanded: true,
-                                    value: _filter,
-                                    icon: const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
-                                    style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
-                                    items: [for (final f in _filters) DropdownMenuItem(value: f, child: Text(f))],
-                                    onChanged: (v) => setState(() => _filter = v ?? '전체'),
-                                  ),
-                                ),
+                              StatusFilterRow(
+                                filters: _filters,
+                                selected: _filter,
+                                onSelected: (f) => setState(() => _filter = f),
                               ),
                               const SizedBox(height: 12),
                               if (filtered.isEmpty)

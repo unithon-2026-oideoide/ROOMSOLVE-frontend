@@ -39,13 +39,12 @@ class AppColors {
   static const Color accentGreen = Color(0xFF34C759);
   static const Color accentYellow = Color(0xFFFFCC00);
 
-  /// "Drop Shadow" effect token: rgba(29,70,242,0.10), offset (4,4), radius 20
-  static const Color dropShadowColor = Color(0x1A1D46F2);
+  /// 카드 등 흰 배경 요소에 쓰는 공용 그림자. 예전엔 브랜드 블루가 10% 섞인
+  /// rgba(29,70,242,0.10)이라 카드마다 옅은 파란 헤일로가 졌다 — 색을 뺀
+  /// 중립(잉크색 기반) 톤으로 바꾸고, 촘촘한 레이어(경계) + 넓은 레이어(들뜬
+  /// 느낌) 두 겹으로 구성했다. 아이콘/버튼 등 다른 곳의 색은 그대로다.
   static const List<BoxShadow> dropShadow = [
-    BoxShadow(
-      color: dropShadowColor,
-      offset: Offset(4, 4),
-      blurRadius: 20,
-    ),
+    BoxShadow(color: Color(0x0A14161F), offset: Offset(0, 1), blurRadius: 2),
+    BoxShadow(color: Color(0x0F14161F), offset: Offset(0, 6), blurRadius: 18),
   ];
 }

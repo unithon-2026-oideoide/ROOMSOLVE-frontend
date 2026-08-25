@@ -7,6 +7,7 @@ import '../../services/landlord_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/status_filter_row.dart';
 
 /// "임대인 - 수리요청관리": 전체 수리 요청을 상태별로 묶어서 보여준다.
 class LandlordRequestsScreen extends StatefulWidget {
@@ -109,12 +110,12 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
                               Center(child: Text(_errorMessage!, style: AppTextStyles.bodyRegular14(color: AppColors.accentRed))),
                             ]
                           : [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('수리 요청 관리', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-                                  _FilterDropdown(value: _filter, onChanged: (v) => setState(() => _filter = v)),
-                                ],
+                              Text('수리 요청 관리', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
+                              const SizedBox(height: 12),
+                              StatusFilterRow(
+                                filters: const ['전체', '승인 대기', '수리 대기', '완료'],
+                                selected: _filter,
+                                onSelected: (f) => setState(() => _filter = f),
                               ),
                               const SizedBox(height: 20),
                               for (final group in ['승인 대기', '수리 대기', '완료'])
@@ -149,34 +150,6 @@ class _LandlordRequestsScreenState extends State<LandlordRequestsScreen> {
             ),
             const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/landlord', reportsPath: '/landlord/requests'),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterDropdown extends StatelessWidget {
-  const _FilterDropdown({required this.value, required this.onChanged});
-  final String value;
-  final ValueChanged<String> onChanged;
-
-  static const _options = ['전체', '승인 대기', '수리 대기', '완료'];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE6E6E6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          icon: const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
-          style: AppTextStyles.bodyRegular14(color: AppColors.gray8),
-          items: [for (final o in _options) DropdownMenuItem(value: o, child: Text(o))],
-          onChanged: (v) => onChanged(v ?? '전체'),
         ),
       ),
     );
