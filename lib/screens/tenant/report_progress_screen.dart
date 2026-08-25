@@ -7,7 +7,6 @@ import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 enum _StepState { done, current, pending }
 
@@ -99,7 +98,6 @@ class _ReportProgressScreenState extends State<ReportProgressScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())

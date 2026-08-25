@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 /// "알림 설정 화면". 알림 설정 전용 백엔드 API가 없어 로컬 상태만 다룬다.
 class NotificationSettingsScreen extends StatefulWidget {
@@ -90,7 +89,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),

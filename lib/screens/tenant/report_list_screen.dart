@@ -8,7 +8,6 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 /// "신고 내역 화면"
 class ReportListScreen extends StatefulWidget {
@@ -84,7 +83,6 @@ class _ReportListScreenState extends State<ReportListScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,

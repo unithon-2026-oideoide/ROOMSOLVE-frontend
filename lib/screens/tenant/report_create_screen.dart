@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../widgets/app_top_bar.dart';
 import '../../widgets/app_bottom_nav.dart';
 
 /// 1단계: 문제 설명 + 사진 첨부. "다음 단계로"에서 실제 업로드/AI 분석은
@@ -131,7 +130,6 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),

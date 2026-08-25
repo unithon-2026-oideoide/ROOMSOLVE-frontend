@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../core/api_client.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import 'app_top_bar.dart';
 
 /// go_router 라우트가 `extra`로 넘겨받은 객체가 있으면 그대로 쓰고, 없으면
 /// (웹에서 새로고침했거나 링크로 직접 들어온 경우 — go_router는 `extra`를
@@ -92,7 +91,6 @@ class _StatusScaffold extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(child: child),
           ],
         ),

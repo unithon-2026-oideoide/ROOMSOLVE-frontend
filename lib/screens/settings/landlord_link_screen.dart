@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 /// "임대인 연결" 화면. 세입자가 임대인에게 받은 초대 코드를 입력해
 /// PATCH /api/users/link-landlord를 호출한다. 연결돼야 신고 접수(POST
@@ -70,7 +69,6 @@ class _LandlordLinkScreenState extends State<LandlordLinkScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),

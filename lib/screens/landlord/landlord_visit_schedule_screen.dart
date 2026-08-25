@@ -6,7 +6,6 @@ import '../../services/repair_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 /// "임대인 - 방문 일정 확정" 화면.
 /// GET /api/repair/schedule?reportId=로 실제 확정 일정을 가져온다(requestId는
@@ -61,7 +60,6 @@ class _LandlordVisitScheduleScreenState extends State<LandlordVisitScheduleScree
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())

@@ -8,7 +8,6 @@ import '../../services/report_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 String _formatDateTime(String isoString) {
   final dt = DateTime.tryParse(isoString);
@@ -153,7 +152,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),

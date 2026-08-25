@@ -9,7 +9,6 @@ import '../../services/technician_job_loader.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_top_bar.dart';
 
 /// "배정 작업 목록 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
 /// 일정을 가져온다. 배정된 일정이 없으면 빈 상태 안내를 보여준다.
@@ -61,7 +60,6 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const AppTopBar(),
               Expanded(
                 child: Center(
                   child: Padding(
@@ -86,7 +84,6 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const AppTopBar(),
               const Expanded(child: Center(child: CircularProgressIndicator())),
               const AppBottomNav(current: AppBottomNavTab.reports, homePath: '/technician', reportsPath: '/technician/jobs'),
             ],
@@ -101,7 +98,6 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const AppTopBar(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,
