@@ -29,9 +29,14 @@ class LandlordService {
     await _api.post('/api/landlord/auto-approval-policy', data: policy);
   }
 
+  /// GET /api/landlord/properties — "호실" 테이블이 없어서 실제로는 이 임대인에게
+  /// 신고를 보낸 세입자 목록({id, name, phone})을 중복 제거해 반환한다
+  /// (landlord.controller.ts의 listProperties 확인함). unit/status/contractEnd
+  /// 같은 필드는 없다 — 화면 쪽 매핑은 아직 안 고쳤다(알려진 4번 항목).
   Future<List<Map<String, dynamic>>> getProperties() async {
     final response = await _api.get('/api/landlord/properties');
-    final list = (response.data as List?) ?? [];
+    final data = response.data as Map<String, dynamic>;
+    final list = (data['properties'] as List?) ?? [];
     return list.cast<Map<String, dynamic>>();
   }
 }
