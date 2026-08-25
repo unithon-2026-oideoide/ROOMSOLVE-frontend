@@ -393,7 +393,6 @@ class _VendorMatchView extends StatefulWidget {
 class _VendorMatchViewState extends State<_VendorMatchView> {
   List<Vendor>? _vendors;
   String? _errorMessage;
-  bool _approvalRequested = false;
 
   @override
   void initState() {
@@ -426,6 +425,15 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
 
   @override
   Widget build(BuildContext context) {
+    final report = widget.report;
+    // submitReport()가 분석 직후 바로 저장하므로, 이 화면에 도달한 시점에 신고는
+    // 이미 임대인에게 전달돼 있다. 그래서 아래 버튼은 "요청 보내기" 액션이 아니라
+    // report.status를 그대로 보여주는 용도다. 예전에는 로컬 bool
+    // (_approvalRequested)이 화면을 열 때마다 false로 초기화돼서, 이미 승인·거절된
+    // 신고를 다시 열어도 "임대인 승인 요청하기"가 활성화된 것처럼 보였다.
+    final approved = report.status == 'approved';
+    final rejected = report.isRejected;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       child: Column(
@@ -483,21 +491,17 @@ class _VendorMatchViewState extends State<_VendorMatchView> {
           SizedBox(
             height: 44,
             child: ElevatedButton(
-              onPressed: _approvalRequested
-                  ? null
-                  : () {
-                      setState(() => _approvalRequested = true);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('임대인에게 승인 요청을 보냈습니다.')),
-                      );
-                    },
+              // 실제 액션이 아니라 현재 상태 표시라 항상 비활성 — 위 주석 참고.
+              onPressed: null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brandLight,
+                disabledBackgroundColor:
+                    rejected ? AppColors.accentRed : (approved ? AppColors.accentGreen : AppColors.brandLight),
+                disabledForegroundColor: AppColors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
               child: Text(
-                _approvalRequested ? '승인 요청 완료' : '임대인 승인 요청하기',
+                rejected ? '임대인이 거절했습니다' : (approved ? '임대인 승인 완료' : '임대인 승인 대기 중'),
                 style: AppTextStyles.bodySemiBold16(color: AppColors.white),
               ),
             ),
