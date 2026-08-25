@@ -28,6 +28,7 @@ const _roleOptions = [
 ];
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   UserRole _selectedRole = UserRole.tenant;
@@ -36,6 +37,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -50,6 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
       await context.read<AuthProvider>().signup(
             email: _emailController.text.trim(),
             password: _passwordController.text,
+            name: _nameController.text.trim(),
             role: _selectedRole,
           );
       if (mounted) context.go('/');
@@ -121,6 +124,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   boxShadow: AppColors.dropShadow,
                 ),
                 child: TextField(
+                  controller: _nameController,
+                  style: AppTextStyles.bodyRegular14(color: AppColors.black),
+                  decoration: _pillDecoration('이름'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: AppColors.dropShadow,
+                ),
+                child: TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   style: AppTextStyles.bodyRegular14(color: AppColors.black),
@@ -168,6 +183,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         )
                       : Text('시작하기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
+                child: Text('이미 계정이 있으신가요? 로그인하기', style: AppTextStyles.bodyRegular14(color: AppColors.gray6)),
               ),
             ],
           ),

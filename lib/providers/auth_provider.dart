@@ -43,18 +43,26 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login({required String email, required String password}) async {
-    final user = await AuthService.instance.login(email: email, password: password);
-    _currentUser = user;
+    final result = await AuthService.instance.login(email: email, password: password);
+    // 로그인은 세션이 없으면 백엔드가 401(예: "Email not confirmed")로 이미 거부하므로
+    // 여기 도달했다면 항상 세션이 있다.
+    _currentUser = result.user;
     notifyListeners();
   }
 
+  /// 회원가입. 이메일 인증이 필요한 계정이면(session이 null) 로그인 상태로
+  /// 취급하지 않고 예외를 던진다 — 화면에서 "이메일을 확인해주세요" 안내로 쓰인다.
   Future<void> signup({
     required String email,
     required String password,
+    required String name,
     required UserRole role,
   }) async {
-    final user = await AuthService.instance.signup(email: email, password: password, role: role);
-    _currentUser = user;
+    final result = await AuthService.instance.signup(email: email, password: password, name: name, role: role);
+    if (!result.hasSession) {
+      throw ApiException('가입 확인 이메일을 보냈습니다. 메일함에서 인증 링크를 확인한 뒤 로그인해주세요.');
+    }
+    _currentUser = result.user;
     notifyListeners();
   }
 
