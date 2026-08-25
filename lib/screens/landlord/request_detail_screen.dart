@@ -76,8 +76,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   Future<void> _selectQuote(Quote quote) async {
     setState(() => _isSubmitting = true);
     try {
+      // 승인 API를 따로 부르지 않는다. 서버가 selected 처리 안에서 신고를 approved로
+      // 올린다(quotes.controller.ts updateQuoteStatus). 여기서 또 부르면 같은 상태를
+      // 두 곳에서 쓰게 되고, 두 번째 호출만 실패했을 때 상태를 되짚기 어려워진다.
       await QuoteService.instance.updateQuoteStatus(quoteId: quote.id, status: 'selected');
-      await LandlordService.instance.approveRequest(id: widget.requestId, approve: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${quote.vendorName ?? '수리업체'} 견적을 선택하여 승인했습니다.')),
@@ -93,16 +95,14 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     }
   }
 
-  Future<void> _respond(bool approve) async {
+  /// 수리 요청 거절. 승인은 여기로 오지 않는다 — 견적을 선택하면 서버가
+  /// 신고를 approved로 올린다(quotes.controller.ts updateQuoteStatus).
+  Future<void> _reject() async {
     setState(() => _isSubmitting = true);
     try {
-      await LandlordService.instance.approveRequest(id: widget.requestId, approve: approve);
+      await LandlordService.instance.approveRequest(id: widget.requestId, approve: false);
       if (!mounted) return;
-      if (approve) {
-        context.pop();
-      } else {
-        context.pushReplacement('/landlord/requests/${widget.requestId}/rejected', extra: _rejectReasonController.text);
-      }
+      context.pushReplacement('/landlord/requests/${widget.requestId}/rejected', extra: _rejectReasonController.text);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
@@ -150,7 +150,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         ],
       ),
     );
-    if (confirmed == true) await _respond(false);
+    if (confirmed == true) await _reject();
   }
 
   bool get _isPending {
@@ -297,39 +297,28 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           if (_isPending) ...[
             const SizedBox(height: 24),
             Text('처리 결정', style: AppTextStyles.subtitleBold18(color: AppColors.black)),
+            const SizedBox(height: 8),
+            // 승인 버튼은 없앴다. 바뀐 플로우에서 승인은 위 "수리업체 제안 견적"에서
+            // 견적을 고르는 행위이고, 그때 서버가 신고를 approved로 올린다.
+            // 버튼으로 따로 승인하면 업체가 안 정해진 채 approved가 되어, 그 뒤로는
+            // 견적 선택 버튼이 잠겨 되돌릴 수 없었다.
+            Text(
+              '견적을 선택하면 해당 업체로 승인됩니다. 수리 자체가 필요 없다면 아래에서 거절하세요.',
+              style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
+            ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : () => _respond(true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brandLight,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                        elevation: 0,
-                      ),
-                      child: Text('승인', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
-                    ),
-                  ),
+            SizedBox(
+              height: 60,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _confirmReject,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gray5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  elevation: 0,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _confirmReject,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gray5,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                        elevation: 0,
-                      ),
-                      child: Text('거절', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
-                    ),
-                  ),
-                ),
-              ],
+                child: Text('수리 요청 거절', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
+              ),
             ),
             const SizedBox(height: 16),
             Container(
