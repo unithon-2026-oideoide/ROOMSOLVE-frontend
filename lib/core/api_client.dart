@@ -79,6 +79,11 @@ class ApiClient {
 
   String _messageFrom(DioException e) {
     final data = e.response?.data;
+    // 백엔드는 {"error": "..."} 형태로 응답한다 (스웨거 Error 스키마).
+    // message 키는 실제로 쓰이지 않지만 혹시 모를 다른 응답 형태를 위해 함께 확인한다.
+    if (data is Map && data['error'] != null) {
+      return data['error'].toString();
+    }
     if (data is Map && data['message'] != null) {
       return data['message'].toString();
     }
