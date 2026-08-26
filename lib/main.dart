@@ -45,6 +45,7 @@ class _AppViewState extends State<_AppView> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: '집 하자보수 매칭',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: _router,
     );
