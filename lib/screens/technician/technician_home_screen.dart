@@ -117,16 +117,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('오늘의 작업', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
-                        TextButton(
-                          onPressed: () => context.push('/settings'),
-                          child: Text('설정', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
-                        ),
-                      ],
-                    ),
+                    Text('오늘의 작업', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
