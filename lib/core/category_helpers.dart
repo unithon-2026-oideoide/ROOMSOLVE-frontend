@@ -56,11 +56,16 @@ String requestStatusLabel(String? status, {String fallback = '승인 대기'}) {
 }
 
 /// 수리 요청 상태에 따른 배지 배경 색상.
+///
+/// 초록은 "수리가 실제로 끝났다(completed/done)"는 뜻으로만 쓴다 — 예전엔
+/// pending(승인 대기)이 초록, completed/done(완료)이 회색이라 정작 다 끝난
+/// 요청이 가장 안 눈에 띄는 색이었다. report_list_screen.dart(세입자 신고
+/// 내역)의 _statusColor와 같은 규칙으로 맞췄다: 대기/진행 중은 파란색,
+/// 거절은 빨간색, 완료만 초록색.
 Color requestStatusColor(String? status) {
   final key = status?.trim().toLowerCase() ?? '';
   switch (key) {
     case 'pending':
-      return AppColors.accentGreen;
     case 'approved':
     case 'in_progress':
       return AppColors.brandMain;
@@ -68,14 +73,22 @@ Color requestStatusColor(String? status) {
       return AppColors.accentRed;
     case 'completed':
     case 'done':
-      return AppColors.gray5;
-    default:
-      if (key.contains('대기')) return AppColors.accentGreen;
-      if (key.contains('진행') || key.contains('승인')) return AppColors.brandMain;
-      if (key.contains('거절')) return AppColors.accentRed;
-      if (key.contains('완료')) return AppColors.gray5;
       return AppColors.accentGreen;
+    default:
+      if (key.contains('대기') || key.contains('진행') || key.contains('승인')) return AppColors.brandMain;
+      if (key.contains('거절')) return AppColors.accentRed;
+      if (key.contains('완료')) return AppColors.accentGreen;
+      return AppColors.brandMain;
   }
+}
+
+/// 수리기사에게 배정된 작업(TechnicianJob.statusLabel) 배지 색. 예전엔
+/// technician_home_screen/technician_job_list_screen/job_detail_screen
+/// 세 곳 모두 상태와 무관하게 항상 brandLight였다 — requestStatusColor와
+/// 같은 규칙으로, 완료만 초록색이고 나머지(방문 예정/진행 중/보류)는
+/// 파란색이다.
+Color technicianJobStatusColor(String? label) {
+  return label == '완료' ? AppColors.accentGreen : AppColors.brandMain;
 }
 
 /// repair_status_timeline.status(scheduled/confirmed/in_progress/done) 영문

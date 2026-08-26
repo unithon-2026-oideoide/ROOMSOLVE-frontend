@@ -3,12 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/technician_job_loader.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/status_filter_button.dart';
 
 /// "배정 작업 목록 화면". GET /api/repair/schedule(technicianId=)로 실제 배정
 /// 일정을 가져온다. 배정된 일정이 없으면 빈 상태 안내를 보여준다.
@@ -24,7 +26,9 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
   List<TechnicianJob>? _allJobs;
   String? _errorMessage;
 
-  static const _filters = ['전체', '방문 예정', '진행 중', '완료'];
+  // '보류'가 빠져 있었다 — _groupOrder(아래)엔 있는데 필터 목록엔 없어서 보류
+  // 상태인 작업만 따로 걸러 볼 방법이 없었다.
+  static const _filters = ['전체', '방문 예정', '진행 중', '보류', '완료'];
 
   static const _groupOrder = [
     ('방문 예정', TechnicianJobStatus.scheduled),
@@ -92,6 +96,10 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
       );
     }
     final jobs = allJobs.where((j) => _filter == '전체' || j.statusLabel == _filter).toList();
+    final counts = <String, int>{
+      '전체': allJobs.length,
+      for (final f in _filters.skip(1)) f: allJobs.where((j) => j.statusLabel == f).length,
+    };
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -106,40 +114,13 @@ class _TechnicianJobListScreenState extends State<TechnicianJobListScreen> {
                   children: [
                     Text('배정 작업 목록', style: AppTextStyles.subtitleBold22(color: AppColors.black)),
                     const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: AppColors.dropShadow,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('작업 상태', style: AppTextStyles.bodySemiBold14(color: AppColors.gray8)),
-                          const Icon(Icons.expand_more, size: 16, color: AppColors.gray8),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final f in _filters)
-                          GestureDetector(
-                            onTap: () => setState(() => _filter = f),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: _filter == f ? AppColors.brandDark : AppColors.brandLight,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(f, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
-                            ),
-                          ),
-                      ],
+                    StatusFilterButton(
+                      title: '작업 상태',
+                      filters: _filters,
+                      selected: _filter,
+                      counts: counts,
+                      colorOf: (label) => label == '전체' ? AppColors.gray5 : technicianJobStatusColor(label),
+                      onSelected: (f) => setState(() => _filter = f),
                     ),
                     const SizedBox(height: 16),
                     for (final group in _groupOrder)
@@ -213,8 +194,11 @@ class _JobRow extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                  child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                  decoration: BoxDecoration(
+                    color: technicianJobStatusColor(job.statusLabel),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(job.statusLabel, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                 ),
               ],
             ),

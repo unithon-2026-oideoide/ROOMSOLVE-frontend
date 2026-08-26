@@ -204,7 +204,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(999)),
-              child: Text(_statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+              child: Text(_statusLabel, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
             ),
           ),
           const SizedBox(height: 16),
@@ -306,17 +306,23 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               style: AppTextStyles.bodyRegular14(color: AppColors.gray6),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 60,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _confirmReject,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gray5,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                  elevation: 0,
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: AppColors.dropShadow,
+              ),
+              child: SizedBox(
+                height: 60,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _confirmReject,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gray5,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    elevation: 0,
+                  ),
+                  child: Text('수리 요청 거절', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                 ),
-                child: Text('수리 요청 거절', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
               ),
             ),
             const SizedBox(height: 16),

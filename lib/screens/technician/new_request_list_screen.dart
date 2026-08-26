@@ -138,14 +138,14 @@ class _RequestRow extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(color: AppColors.gray5, borderRadius: BorderRadius.circular(999)),
-                    child: Text('견적 제출됨', style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                    child: Text('견적 제출됨', style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                   ),
                   const SizedBox(width: 8),
                 ],
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                  child: Text(severityLabel(request.severity), style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                  child: Text(severityLabel(request.severity), style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                 ),
               ],
             ),

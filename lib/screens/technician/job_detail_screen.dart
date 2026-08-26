@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/category_helpers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../models/technician_job.dart';
@@ -43,8 +44,11 @@ class JobDetailScreen extends StatelessWidget {
                       title: '작업 상세',
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                        child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                        decoration: BoxDecoration(
+                          color: technicianJobStatusColor(job.statusLabel),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(job.statusLabel, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                       ),
                     ),
                     const SizedBox(height: 4),

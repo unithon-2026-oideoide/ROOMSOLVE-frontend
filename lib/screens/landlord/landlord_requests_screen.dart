@@ -209,7 +209,7 @@ class _RequestRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(999)),
-              child: Text(badgeText, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+              child: Text(badgeText, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
             ),
           ],
         ),

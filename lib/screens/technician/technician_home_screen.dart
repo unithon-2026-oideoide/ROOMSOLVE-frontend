@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api_client.dart';
+import '../../core/category_helpers.dart';
 import '../../models/technician_job.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/technician_job_loader.dart';
@@ -287,13 +288,16 @@ class _ScheduleCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(color: _priorityColor, borderRadius: BorderRadius.circular(999)),
-                        child: Text(job.priority, style: AppTextStyles.bodyRegular12(color: _priorityText)),
+                        child: Text(job.priority, style: AppTextStyles.bodySemiBold12(color: _priorityText)),
                       ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(color: AppColors.brandLight, borderRadius: BorderRadius.circular(999)),
-                        child: Text(job.statusLabel, style: AppTextStyles.bodyRegular12(color: AppColors.white)),
+                        decoration: BoxDecoration(
+                          color: technicianJobStatusColor(job.statusLabel),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(job.statusLabel, style: AppTextStyles.bodySemiBold12(color: AppColors.white)),
                       ),
                     ],
                   ),
