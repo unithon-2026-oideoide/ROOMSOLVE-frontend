@@ -206,16 +206,22 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                       Text(_errorMessage!, style: AppTextStyles.bodyRegular12(color: AppColors.accentRed)),
                       const SizedBox(height: 12),
                     ],
-                    SizedBox(
-                      height: 39,
-                      child: ElevatedButton(
-                        onPressed: _goNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                          elevation: 0,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: SizedBox(
+                        height: 39,
+                        child: ElevatedButton(
+                          onPressed: _goNext,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
+                          ),
+                          child: Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                         ),
-                        child: Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                       ),
                     ),
                   ],

@@ -91,16 +91,22 @@ class RequestRejectedScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () => context.go('/landlord/requests'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () => context.go('/landlord/requests'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          child: Text('요청 목록으로', style: AppTextStyles.bodyRegular14(color: AppColors.white)),
                         ),
-                        child: Text('요청 목록으로', style: AppTextStyles.bodyRegular14(color: AppColors.white)),
                       ),
                     ),
                   ],

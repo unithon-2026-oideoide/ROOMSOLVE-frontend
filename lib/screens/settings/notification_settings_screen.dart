@@ -157,21 +157,27 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: SizedBox(
-                            height: 44,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('알림 설정이 저장되었습니다.')),
-                                );
-                                context.pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brandLight,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                elevation: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: AppColors.dropShadow,
+                            ),
+                            child: SizedBox(
+                              height: 44,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('알림 설정이 저장되었습니다.')),
+                                  );
+                                  context.pop();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.brandLight,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                child: Text('저장', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
                               ),
-                              child: Text('저장', style: AppTextStyles.bodySemiBold14(color: AppColors.white)),
                             ),
                           ),
                         ),

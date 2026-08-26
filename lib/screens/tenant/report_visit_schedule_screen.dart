@@ -175,16 +175,22 @@ class _ReportVisitScheduleScreenState extends State<ReportVisitScheduleScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          SizedBox(
-                            height: 44,
-                            child: ElevatedButton(
-                              onPressed: () => context.push('/tenant/reports/${report.id}/progress', extra: report),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brandLight,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                elevation: 0,
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: AppColors.dropShadow,
+                            ),
+                            child: SizedBox(
+                              height: 44,
+                              child: ElevatedButton(
+                                onPressed: () => context.push('/tenant/reports/${report.id}/progress', extra: report),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.brandLight,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                child: Text('수리 진행 현황 보기', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                               ),
-                              child: Text('수리 진행 현황 보기', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                             ),
                           ),
                         ],

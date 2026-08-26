@@ -110,22 +110,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
                 const SizedBox(height: 36),
-                SizedBox(
-                  height: 47,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brandLight,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      elevation: 0,
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: AppColors.dropShadow,
+                  ),
+                  child: SizedBox(
+                    height: 47,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brandLight,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                            )
+                          : Text('로그인하기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
-                          )
-                        : Text('로그인하기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
                   ),
                 ),
                 const SizedBox(height: 12),

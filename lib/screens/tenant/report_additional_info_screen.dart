@@ -354,22 +354,28 @@ class _ReportAdditionalInfoScreenState extends State<ReportAdditionalInfoScreen>
                       ),
                       const SizedBox(height: 12),
                     ],
-                    SizedBox(
-                      height: 39,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                          elevation: 0,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: SizedBox(
+                        height: 39,
+                        child: ElevatedButton(
+                          onPressed: _isSubmitting ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                                )
+                              : Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
-                              )
-                            : Text('다음 단계로', style: AppTextStyles.bodySemiBold16(color: AppColors.white)),
                       ),
                     ),
                   ],

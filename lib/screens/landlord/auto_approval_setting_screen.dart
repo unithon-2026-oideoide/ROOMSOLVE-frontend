@@ -243,22 +243,28 @@ class _AutoApprovalSettingScreenState extends State<AutoApprovalSettingScreen> {
                       Text(_message!, style: AppTextStyles.bodyRegular14(color: AppColors.gray8)),
                       const SizedBox(height: 12),
                     ],
-                    SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: AppColors.dropShadow,
+                      ),
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: _isSubmitting ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                                )
+                              : Text('설정 저장', style: AppTextStyles.bodyRegular14(color: AppColors.white)),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
-                              )
-                            : Text('설정 저장', style: AppTextStyles.bodyRegular14(color: AppColors.white)),
                       ),
                     ),
                   ],

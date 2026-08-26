@@ -151,16 +151,22 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                               const SizedBox(height: 12),
                             ],
                           const SizedBox(height: 8),
-                          SizedBox(
-                            height: 47,
-                            child: ElevatedButton(
-                              onPressed: () => context.push('/landlord/requests'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brandLight,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                                elevation: 0,
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              boxShadow: AppColors.dropShadow,
+                            ),
+                            child: SizedBox(
+                              height: 47,
+                              child: ElevatedButton(
+                                onPressed: () => context.push('/landlord/requests'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.brandLight,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                  elevation: 0,
+                                ),
+                                child: Text('수리 요청 전체 보기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
                               ),
-                              child: Text('수리 요청 전체 보기', style: AppTextStyles.subtitleBold18(color: AppColors.white)),
                             ),
                           ),
                           const SizedBox(height: 24),
